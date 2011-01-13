@@ -1,0 +1,10 @@
+﻿<#@ include file="Templates\Includes\Include1.txt" #>
+<html>
+<head>
+    <title>
+    </title>
+</head>
+<body>
+    <#= TestClass.TestMethod() #>
+</body>
+</html>

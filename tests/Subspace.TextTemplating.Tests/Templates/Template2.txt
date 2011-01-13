@@ -1,0 +1,10 @@
+﻿<#@ import namespace="System" #>
+<html>
+<head>
+    <title>
+    </title>
+</head>
+<body>
+    <#= Context.Property1 #>
+</body>
+</html>
