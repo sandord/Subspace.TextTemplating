@@ -246,9 +246,9 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Transforms the specified file and returns the result.
+        ///     Transforms the specified text file and returns the result.
         /// </summary>
-        /// <param name="path">The path of the file.</param>
+        /// <param name="path">The path of the text file.</param>
         /// <exception cref="ArgumentNullException">The specified path is <c>null</c>.</exception>
         public string TransformFile(string path)
         {
@@ -259,7 +259,7 @@ namespace Subspace.TextTemplating
 
             scriptDirectory = Path.Combine(baseDirectory, Path.GetDirectoryName(path));
 
-            return Transform(File.ReadAllText(path), path);
+            return TransformText(File.ReadAllText(path), path);
         }
 
         /// <summary>
@@ -268,7 +268,7 @@ namespace Subspace.TextTemplating
         /// <param name="text">The text to transform.</param>
         /// <param name="sourcePath">The path of the source file.</param>
         /// <exception cref="ArgumentNullException">The specified <paramref name="text"/> is <c>null</c>.</exception>
-        public string Transform(string text, string sourcePath)
+        public string TransformText(string text, string sourcePath)
         {
             Parse(text, sourcePath);
 
