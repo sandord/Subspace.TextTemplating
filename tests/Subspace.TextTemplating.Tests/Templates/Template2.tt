@@ -1,4 +1,5 @@
-﻿<#@ import namespace="System" #>
+﻿<#@ template language="C#" #>
+<#@ import namespace="System" #>
 <html>
 <head>
     <title>

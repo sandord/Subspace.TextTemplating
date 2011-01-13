@@ -45,6 +45,27 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InlineScriptParserTests.cs" />
+    <Compile Include="Templates\Includes\Include11.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Include1.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Templates\Template11.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Template1.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Templates\Template2.cs" />
+    <Compile Include="Templates\Template21.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Template2.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Templates\Template31.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Template3.tt</DependentUpon>
+    </Compile>
     <Compile Include="TestObjects\TestContext1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -55,27 +76,29 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Templates\Includes\Include1.txt">
+    <None Include="Templates\Includes\Include1.tt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\Template3.ExpectedOutput.txt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>Include11.cs</LastGenOutput>
+    </None>
+    <None Include="Templates\Template3.tt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\Template3.txt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>Template31.cs</LastGenOutput>
+    </None>
+    <None Include="Templates\Template1.tt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\Template1.ExpectedOutput.txt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>Template11.cs</LastGenOutput>
+    </None>
+    <None Include="Templates\Template2.tt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\Template1.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\Template2.ExpectedOutput.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\Template2.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>Template21.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

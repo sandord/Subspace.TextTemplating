@@ -37,17 +37,22 @@ namespace Subspace.TextTemplating
         ClassBody,
 
         /// <summary>
-        ///     An include statement.
+        ///     A template directive.
+        /// </summary>
+        Template,
+
+        /// <summary>
+        ///     An include directive.
         /// </summary>
         Include,
 
         /// <summary>
-        ///     A namespace import statement.
+        ///     A namespace import directive.
         /// </summary>
         NamespaceImport,
 
         /// <summary>
-        ///     A script parameter definition.
+        ///     A script parameter directive.
         /// </summary>
         ScriptParameter
     }

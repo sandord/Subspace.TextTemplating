@@ -1,4 +1,5 @@
-﻿<#@ include file="Templates\Includes\Include1.txt" #>
+﻿<#@ template language="C#" #>
+<#@ include file="Includes\Include1.tt" #>
 <html>
 <head>
     <title>

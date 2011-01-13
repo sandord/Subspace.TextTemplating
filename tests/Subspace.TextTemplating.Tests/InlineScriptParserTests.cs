@@ -15,6 +15,7 @@ using NUnit.Framework;
 using Subspace.TextTemplating;
 
 using Subspace.TextTemplating.Tests.TestObjects;
+using Subspace.TextTemplating.Tests.Templates;
 
 namespace Subspace.TextTemplating.Tests
 {
@@ -26,10 +27,10 @@ namespace Subspace.TextTemplating.Tests
         {
             // Arrange.
             var inlineScriptParser = new InlineScriptParser();
-            var expected = File.ReadAllText(@"Templates\Template1.ExpectedOutput.txt");
+            var expected = new Template1().TransformText();
 
             // Act.
-            string output = inlineScriptParser.TransformFile(@"Templates\Template1.txt");
+            string output = inlineScriptParser.TransformFile(@"Templates\Template1.tt");
 
             // Assert.
             Assert.AreEqual(expected, output);
@@ -45,14 +46,11 @@ namespace Subspace.TextTemplating.Tests
             };
 
             var inlineScriptParser = new InlineScriptParser(context);
-
-            var expected = string.Format(
-                File.ReadAllText(@"Templates\Template2.ExpectedOutput.txt"),
-                context.Property1);
+            var expected = new Template2() { Context = context }.TransformText();
 
             // Act.
 
-            string output = inlineScriptParser.TransformFile(@"Templates\Template2.txt");
+            string output = inlineScriptParser.TransformFile(@"Templates\Template2.tt");
 
             // Assert.
             Assert.AreEqual(expected, output);
@@ -63,12 +61,11 @@ namespace Subspace.TextTemplating.Tests
         {
             // Arrange.
             var inlineScriptParser = new InlineScriptParser();
-
-            var expected = File.ReadAllText(@"Templates\Template3.ExpectedOutput.txt");
+            var expected = new Template3().TransformText();
 
             // Act.
 
-            string output = inlineScriptParser.TransformFile(@"Templates\Template3.txt");
+            string output = inlineScriptParser.TransformFile(@"Templates\Template3.tt");
 
             // Assert.
             Assert.AreEqual(expected, output);

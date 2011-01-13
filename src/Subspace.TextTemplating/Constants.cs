@@ -64,17 +64,22 @@ namespace Subspace.TextTemplating
         internal static readonly string ScriptAutoWriteMarker = "=";
 
         /// <summary>
-        ///     The marker that is placed directly after the start marker, to mark a namespace import.
+        ///     The marker that is placed directly after the start marker, to mark a template directive.
+        /// </summary>
+        internal static readonly string TemplateMarker = "@ template";
+
+        /// <summary>
+        ///     The marker that is placed directly after the start marker, to mark a namespace import directive.
         /// </summary>
         internal static readonly string NamespaceImportMarker = "@ import";
 
         /// <summary>
-        ///     The marker that is placed directly after the start marker, to mark a script include.
+        ///     The marker that is placed directly after the start marker, to mark a script include directive.
         /// </summary>
         internal static readonly string ScriptIncludeMarker = "@ include";
 
         /// <summary>
-        ///     The marker that is placed directly after the start marker, to mark a script parameter.
+        ///     The marker that is placed directly after the start marker, to mark a script parameter directive.
         /// </summary>
         internal static readonly string ScriptParameterMarker = "@ parameter";
     }

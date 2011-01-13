@@ -57,6 +57,7 @@ namespace Subspace.TextTemplating
     {
         private object context;
         private string baseDirectory;
+        private string scriptDirectory;
         private List<string> additionalReferences = new List<string>();
         private string inputText;
         private string sourceFilePath;
@@ -104,7 +105,7 @@ namespace Subspace.TextTemplating
         ///     The specified <paramref name="context"/> is <c>null</c>.
         /// </exception>
         public InlineScriptParser(object context)
-            : this(context, Environment.CurrentDirectory)
+            : this(context, (string)null)
         {
         }
 
@@ -115,8 +116,6 @@ namespace Subspace.TextTemplating
         /// <param name="baseDirectory">The base directory of the script source files.</param>
         /// <exception cref="ArgumentNullException">
         ///     The specified <paramref name="context"/> is <c>null</c>.
-        ///     -or-
-        ///     The specified <paramref name="baseDirectory"/> is <c>null</c>.
         /// </exception>
         /// <exception cref="ArgumentException">The specified <paramref name="baseDirectory"/> is an empty string.</exception>
         public InlineScriptParser(object context, string baseDirectory)
@@ -133,7 +132,7 @@ namespace Subspace.TextTemplating
         ///     The specified <paramref name="context"/> is <c>null</c>.
         /// </exception>
         public InlineScriptParser(object context, IEnumerable<string> additionalReferences)
-            : this(context, Environment.CurrentDirectory, additionalReferences)
+            : this(context, null, additionalReferences)
         {
         }
 
@@ -145,15 +144,13 @@ namespace Subspace.TextTemplating
         /// <param name="additionalReferences">A list of additional library references.</param>
         /// <exception cref="ArgumentNullException">
         ///     The specified <paramref name="context"/> is <c>null</c>.
-        ///     -or-
-        ///     The specified <paramref name="baseDirectory"/> is <c>null</c>.
         /// </exception>
         /// <exception cref="ArgumentException">The specified <paramref name="baseDirectory"/> is an empty string.</exception>
         public InlineScriptParser(object context, string baseDirectory, IEnumerable<string> additionalReferences)
         {
             if (baseDirectory == null)
             {
-                throw new ArgumentNullException("baseDirectory");
+                baseDirectory = Environment.CurrentDirectory;
             }
             else if (string.IsNullOrWhiteSpace(baseDirectory))
             {
@@ -260,6 +257,8 @@ namespace Subspace.TextTemplating
                 throw new ArgumentNullException("path");
             }
 
+            scriptDirectory = Path.Combine(baseDirectory, Path.GetDirectoryName(path));
+
             return Transform(File.ReadAllText(path), path);
         }
 
@@ -298,7 +297,8 @@ namespace Subspace.TextTemplating
                 char[] inputChars = inputText.ToCharArray();
 
                 // Disable all scripted remark sections while leaving the character locations
-                // within the document intact.
+                // within the document intact. This way the line numbers in the source file
+                // references will remain correct.
                 foreach (Match match in remarksRegex.Matches(inputText))
                 {
                     int startIndex = match.Index + Constants.ScriptStartMarker.Length;
@@ -308,7 +308,7 @@ namespace Subspace.TextTemplating
                     {
                         if (!char.IsControl(inputText[i]))
                         {
-                            inputChars[i] = ' ';
+                            inputChars[i] = '\0';
                         }
                     }
                 }
@@ -324,26 +324,38 @@ namespace Subspace.TextTemplating
 
                 for (int i = 0; i < lines.Length; i++)
                 {
-                    string line = lines[i];
-
-                    if (i < lines.Length - 1)
+                    if (lines[i].Length > 0)
                     {
-                        line += '\n';
+                        lines[i] = lines[i].Substring(0, lines[i].Length - 1);
                     }
+                }
+
+                inputText = string.Join("", lines.Select((n, idx) =>
+                    ((n.TrimStart().StartsWith(Constants.ScriptStartMarker)
+                    && !n.TrimStart().StartsWith(Constants.ScriptStartMarker + Constants.ScriptAutoWriteMarker)
+                    && n.TrimEnd().EndsWith(Constants.ScriptEndMarker))
+                    || idx == lines.Length - 1)
+                    ? n : n + "\r\n"));
+
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i];
+                    int length = line.Length + ((i < lines.Length - 1) ? 1 : 0);
 
                     lineMap[lineNumber++] = new CharacterRange()
                     {
                         Offset = characterIndex,
-                        Length = line.Length
+                        Length = length
                     };
-                    characterIndex += line.Length;
+
+                    characterIndex += length;
                 }
 
+                // Parse all fragments.
                 int index = 0;
                 string[] fragments = scriptsRegex.Split(inputText);
                 MatchCollection matches = scriptsRegex.Matches(inputText);
 
-                // Parse all fragments.
                 foreach (string fragment in fragments)
                 {
                     if (!fragment.Equals(Constants.ScriptStartMarker, StringComparison.InvariantCultureIgnoreCase)
@@ -363,18 +375,18 @@ namespace Subspace.TextTemplating
         /// <summary>
         ///     Executes all parsed code and returns the resulting document.
         /// </summary>
-        /// <param name="scriptPath">The path of the file to store the resulting script in.</param>
+        /// <param name="outputScriptPath">The path of the file to store the resulting script in.</param>
         /// <returns>The resulting document.</returns>
-        private string Execute(string scriptPath)
+        private string Execute(string outputScriptPath)
         {
             documentScript.Append(GetAppendParametersScript(scriptParameters));
             documentScript.IncludeSourceFileReferences = IncludeSourceFileReferences;
 
             string script = documentScript.ComposeScript();
 
-            if (!string.IsNullOrEmpty(scriptPath))
+            if (!string.IsNullOrEmpty(outputScriptPath))
             {
-                WriteScript(script, scriptPath);
+                WriteScript(script, outputScriptPath);
             }
 
             CompilerResults results = CompileScript(script);
@@ -456,6 +468,12 @@ namespace Subspace.TextTemplating
                 fragmentType = FragmentType.Include;
             }
             // Determine whether the script is a namespace import statement.
+            else if (fragment.StartsWith(startMarker + Constants.TemplateMarker))
+            {
+                startMarker += Constants.TemplateMarker;
+                fragmentType = FragmentType.Template;
+            }
+            // Determine whether the script is a namespace import statement.
             else if (fragment.StartsWith(startMarker + Constants.NamespaceImportMarker))
             {
                 startMarker += Constants.NamespaceImportMarker;
@@ -500,10 +518,14 @@ namespace Subspace.TextTemplating
             {
                 documentScript.AppendFragment(fragment, lineNumber, sourceFilePath);
             }
+            else if (fragmentType == FragmentType.Template)
+            {
+                //TODO: support the language attribute.
+            }
             else if (fragmentType == FragmentType.Include)
             {
                 string path = ExtractAttribute(fragment, "file");
-                path = Path.Combine(baseDirectory, path.Trim(new char[] { '\'', '\"' }));
+                path = Path.Combine(scriptDirectory, path.Trim(new char[] { '\'', '\"' }));
 
                 ParseFragment(File.ReadAllText(path), 1, path);
             }
