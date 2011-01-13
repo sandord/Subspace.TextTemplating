@@ -26,11 +26,11 @@ namespace Subspace.TextTemplating.Tests
         public void Transforming_Template1_ResultsInExpectedOutput()
         {
             // Arrange.
-            var inlineScriptParser = new InlineScriptParser();
+            var transformer = new TextTemplateTransformer();
             var expected = new Template1().TransformText();
 
             // Act.
-            string output = inlineScriptParser.TransformFile(@"Templates\Template1.tt");
+            string output = transformer.TransformFile(@"Templates\Template1.tt");
 
             // Assert.
             Assert.AreEqual(expected, output);
@@ -45,12 +45,12 @@ namespace Subspace.TextTemplating.Tests
                 Property1 = DateTime.Now.ToString()
             };
 
-            var inlineScriptParser = new InlineScriptParser(context);
+            var transformer = new TextTemplateTransformer(context);
             var expected = new Template2() { Context = context }.TransformText();
 
             // Act.
 
-            string output = inlineScriptParser.TransformFile(@"Templates\Template2.tt");
+            string output = transformer.TransformFile(@"Templates\Template2.tt");
 
             // Assert.
             Assert.AreEqual(expected, output);
@@ -60,12 +60,12 @@ namespace Subspace.TextTemplating.Tests
         public void Transforming_Template3WithInclude_ResultsInExpectedOutput()
         {
             // Arrange.
-            var inlineScriptParser = new InlineScriptParser();
+            var transformer = new TextTemplateTransformer();
             var expected = new Template3().TransformText();
 
             // Act.
 
-            string output = inlineScriptParser.TransformFile(@"Templates\Template3.tt");
+            string output = transformer.TransformFile(@"Templates\Template3.tt");
 
             // Assert.
             Assert.AreEqual(expected, output);

@@ -21,17 +21,17 @@ using Subspace.TextTemplating.Properties;
 namespace Subspace.TextTemplating
 {
     /// <summary>
-    ///     Provides methods for parsing inline scripts.
+    ///     Transforms text templates at runtime.
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         Inline scripts are written in C# and delimited by <c>&lt;#</c> and <c>#&gt;</c>.
-    ///         Function definitions are delimited however, by <c>&lt;#!</c> and <c>#&gt;</c>.
+    ///         Text templates allow for embedded progam code delimited by <c>&lt;#</c> and
+    ///         <c>#&gt;</c>. Function definitions and other fragments that should end up in the
+    ///         body of the generated class, are delimited however, by <c>&lt;#+</c> and
+    ///         <c>#&gt;</c>.
     ///     </para>
     ///     <para>
-    ///         External script files can be included by applying <c>&lt;#@include 'path' #&gt;</c>.
-    ///         Please note that external script files may not contain inline code, thus allowing
-    ///         class members only. A class is generated internally and should not be declared.
+    ///         External template files can be included by applying <c>&lt;# @include path="..." #&gt;</c>.
     ///     </para>
     ///     <para>
     ///         The following instances are available by default:
@@ -53,7 +53,7 @@ namespace Subspace.TextTemplating
     ///         </list>
     ///     </para>
     /// </remarks>
-    public sealed class InlineScriptParser
+    public sealed class TextTemplateTransformer
     {
         private object context;
         private string baseDirectory;
@@ -90,63 +90,63 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="InlineScriptParser"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateTransformer"/> class.
         /// </summary>
-        public InlineScriptParser()
+        public TextTemplateTransformer()
             : this(null)
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="InlineScriptParser"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateTransformer"/> class.
         /// </summary>
         /// <param name="context">The project builder that is building the project.</param>
         /// <exception cref="ArgumentNullException">
         ///     The specified <paramref name="context"/> is <c>null</c>.
         /// </exception>
-        public InlineScriptParser(object context)
+        public TextTemplateTransformer(object context)
             : this(context, (string)null)
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="InlineScriptParser"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateTransformer"/> class.
         /// </summary>
         /// <param name="context">The project builder that is building the project.</param>
-        /// <param name="baseDirectory">The base directory of the script source files.</param>
+        /// <param name="baseDirectory">The base directory of the template source files.</param>
         /// <exception cref="ArgumentNullException">
         ///     The specified <paramref name="context"/> is <c>null</c>.
         /// </exception>
         /// <exception cref="ArgumentException">The specified <paramref name="baseDirectory"/> is an empty string.</exception>
-        public InlineScriptParser(object context, string baseDirectory)
+        public TextTemplateTransformer(object context, string baseDirectory)
             : this(context, baseDirectory, null)
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="InlineScriptParser"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateTransformer"/> class.
         /// </summary>
         /// <param name="context">The project builder that is building the project.</param>
         /// <param name="additionalReferences">A list of additional library references.</param>
         /// <exception cref="ArgumentNullException">
         ///     The specified <paramref name="context"/> is <c>null</c>.
         /// </exception>
-        public InlineScriptParser(object context, IEnumerable<string> additionalReferences)
+        public TextTemplateTransformer(object context, IEnumerable<string> additionalReferences)
             : this(context, null, additionalReferences)
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="InlineScriptParser"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateTransformer"/> class.
         /// </summary>
         /// <param name="context">The project builder that is building the project.</param>
-        /// <param name="baseDirectory">The base directory of the script source files.</param>
+        /// <param name="baseDirectory">The base directory of the template source files.</param>
         /// <param name="additionalReferences">A list of additional library references.</param>
         /// <exception cref="ArgumentNullException">
         ///     The specified <paramref name="context"/> is <c>null</c>.
         /// </exception>
         /// <exception cref="ArgumentException">The specified <paramref name="baseDirectory"/> is an empty string.</exception>
-        public InlineScriptParser(object context, string baseDirectory, IEnumerable<string> additionalReferences)
+        public TextTemplateTransformer(object context, string baseDirectory, IEnumerable<string> additionalReferences)
         {
             if (baseDirectory == null)
             {
@@ -222,9 +222,9 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Initializes the <see cref="InlineScriptParser"/> class.
+        ///     Initializes the <see cref="TextTemplateTransformer"/> class.
         /// </summary>
-        static InlineScriptParser()
+        static TextTemplateTransformer()
         {
             remarksRegex = new Regex(
                 string.Format(
@@ -375,18 +375,18 @@ namespace Subspace.TextTemplating
         /// <summary>
         ///     Executes all parsed code and returns the resulting document.
         /// </summary>
-        /// <param name="outputScriptPath">The path of the file to store the resulting script in.</param>
+        /// <param name="outputPath">The path of the file to store the resulting text in.</param>
         /// <returns>The resulting document.</returns>
-        private string Execute(string outputScriptPath)
+        private string Execute(string outputPath)
         {
             documentScript.Append(GetAppendParametersScript(scriptParameters));
             documentScript.IncludeSourceFileReferences = IncludeSourceFileReferences;
 
             string script = documentScript.ComposeScript();
 
-            if (!string.IsNullOrEmpty(outputScriptPath))
+            if (!string.IsNullOrEmpty(outputPath))
             {
-                WriteScript(script, outputScriptPath);
+                WriteScript(script, outputPath);
             }
 
             CompilerResults results = CompileScript(script);
