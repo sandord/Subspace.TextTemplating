@@ -6,14 +6,14 @@ using System.Text;
 namespace Subspace.TextTemplating
 {
     /// <summary>
-    ///     A reference to a line in a template file source.
+    ///     A reference to a line in a text template file source.
     /// </summary>
-    public struct TemplateFileSourceReference
+    public struct TextTemplateFileSourceReference
     {
         /// <summary>
         ///     Represents an empty template file source reference.
         /// </summary>
-        public static readonly TemplateFileSourceReference Empty = new TemplateFileSourceReference();
+        public static readonly TextTemplateFileSourceReference Empty = new TextTemplateFileSourceReference();
 
         /// <summary>
         ///     Gets or sets the path.
@@ -46,7 +46,7 @@ namespace Subspace.TextTemplating
                 throw new ArgumentNullException("obj");
             }
 
-            TemplateFileSourceReference instance = (TemplateFileSourceReference)obj;
+            TextTemplateFileSourceReference instance = (TextTemplateFileSourceReference)obj;
             
             return Path == instance.Path && Line == instance.Line;
         }
@@ -66,7 +66,7 @@ namespace Subspace.TextTemplating
         /// <param name="left">The left hand value.</param>
         /// <param name="right">The right hand value.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator ==(TemplateFileSourceReference left, TemplateFileSourceReference right)
+        public static bool operator ==(TextTemplateFileSourceReference left, TextTemplateFileSourceReference right)
         {
             return left.Equals(right);
         }
@@ -77,7 +77,7 @@ namespace Subspace.TextTemplating
         /// <param name="left">The left hand value.</param>
         /// <param name="right">The right hand value.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator !=(TemplateFileSourceReference left, TemplateFileSourceReference right)
+        public static bool operator !=(TextTemplateFileSourceReference left, TextTemplateFileSourceReference right)
         {
             return !left.Equals(right);
         }

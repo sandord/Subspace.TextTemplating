@@ -44,7 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="InlineScriptParserTests.cs" />
+    <Compile Include="TextTemplateTransformerTests.cs" />
     <Compile Include="Templates\Includes\Include11.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -61,7 +61,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Template2.tt</DependentUpon>
     </Compile>
-    <Compile Include="Templates\Template31.cs">
+    <Compile Include="Templates\Template3.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Template3.tt</DependentUpon>
@@ -84,7 +84,7 @@
     <None Include="Templates\Template3.tt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>Template31.cs</LastGenOutput>
+      <LastGenOutput>Template3.cs</LastGenOutput>
     </None>
     <None Include="Templates\Template1.tt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

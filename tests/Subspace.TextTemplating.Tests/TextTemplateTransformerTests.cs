@@ -14,7 +14,7 @@ using Subspace.TextTemplating.Tests.Templates;
 namespace Subspace.TextTemplating.Tests
 {
     [TestFixture]
-    public class InlineScriptParserTests
+    public class TextTemplateTransformerTests
     {
         [Test]
         public void Transforming_Template1_ResultsInExpectedOutput()

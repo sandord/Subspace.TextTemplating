@@ -32,6 +32,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -43,8 +44,13 @@
   <ItemGroup>
     <Compile Include="CharacterRange.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="ScriptBuilding\CodeDomProviderFactory.cs" />
+    <Compile Include="ScriptBuilding\ScriptBuilderFactory.cs" />
+    <Compile Include="ScriptBuilding\VisualBasicScriptBuilder.cs" />
+    <Compile Include="ScriptBuilding\CSharpScriptBuilder.cs" />
     <Compile Include="FragmentType.cs" />
-    <Compile Include="InlineScript.cs" />
+    <Compile Include="ScriptBuilding\ScriptBuilder.cs" />
+    <Compile Include="ScriptBuilding\ScriptLanguage.cs" />
     <Compile Include="TextTemplateTransformer.cs" />
     <Compile Include="InternalExceptionStrings.cs" />
     <Compile Include="NamespaceReference.cs" />
@@ -54,9 +60,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="TemplateFileException.cs" />
-    <Compile Include="TemplateFileSourceReference.cs" />
-    <Compile Include="TemplateOutputWriter.cs" />
+    <Compile Include="TextTemplateFileException.cs" />
+    <Compile Include="TextTemplateFileSourceReference.cs" />
+    <Compile Include="TextTemplateOutputWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -64,6 +70,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

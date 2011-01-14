@@ -6,9 +6,9 @@ using System.Xml;
 namespace Subspace.TextTemplating
 {
     /// <summary>
-    ///     Provides means for outputing text from a template file.
+    ///     Provides means for outputing text from a text template file.
     /// </summary>
-    public sealed class TemplateOutputWriter
+    public sealed class TextTemplateOutputWriter
     {
         private StringBuilder stringBuilder;
         private bool capturing;
@@ -122,9 +122,9 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="TemplateOutputWriter"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateOutputWriter"/> class.
         /// </summary>
-        public TemplateOutputWriter()
+        public TextTemplateOutputWriter()
         {
             stringBuilder = new StringBuilder();
         }

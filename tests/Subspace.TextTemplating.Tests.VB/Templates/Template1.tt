@@ -1,0 +1,10 @@
+﻿<#@ template language="VBv3.5" #>
+<html>
+<head>
+    <title>
+    </title>
+</head>
+<body>
+    <#= (1 + 1) #>
+</body>
+</html>

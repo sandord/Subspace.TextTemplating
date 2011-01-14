@@ -8,11 +8,6 @@ namespace Subspace.TextTemplating
     internal static class Constants
     {
         /// <summary>
-        ///     The version of the C# compiler to use for inline scripting.
-        /// </summary>
-        internal static readonly string InlineScriptingCompilerVersion = "v4.0";
-
-        /// <summary>
         ///     The file extension to use when writing generated inline script files.
         /// </summary>
         internal static readonly string InlineScriptingScriptFileExtension = ".cs";

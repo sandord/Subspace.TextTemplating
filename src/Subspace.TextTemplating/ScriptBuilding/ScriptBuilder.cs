@@ -5,20 +5,17 @@ using System.Linq;
 using System.Text;
 using System.Globalization;
 
-namespace Subspace.TextTemplating
+namespace Subspace.TextTemplating.ScriptBuilding
 {
     /// <summary>
-    ///     Provides a means of building an inline template script that is suitable for direct
-    ///     execution.
+    ///     Provides a means of building a script that is suitable for execution.
     /// </summary>
-    internal sealed class InlineScript
+    internal abstract class ScriptBuilder
     {
-        private StringBuilder script;
-
         private static readonly object sourceFilePathsLock = new object();
         private static IDictionary<Guid, string> sourceFilePaths = new Dictionary<Guid, string>();
 
-        private InlineScript _mainMethodScript;
+        private ScriptBuilder _mainMethodScript;
 
         /// <summary>
         ///     The name of the main method.
@@ -55,13 +52,13 @@ namespace Subspace.TextTemplating
         /// <summary>
         ///     Gets the main method script.
         /// </summary>
-        internal InlineScript MainMethodScript
+        internal ScriptBuilder MainMethodScript
         {
             get
             {
                 if (_mainMethodScript == null)
                 {
-                    _mainMethodScript = new InlineScript();
+                    _mainMethodScript = new CSharpScriptBuilder();
                 }
 
                 return _mainMethodScript;
@@ -79,11 +76,11 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="InlineScript"/> class.
+        ///     Initializes a new instance of the <see cref="ScriptBuilder"/> class.
         /// </summary>
-        internal InlineScript()
+        internal ScriptBuilder()
         {
-            script = new StringBuilder();
+            Script = new StringBuilder();
             NamespaceReferences = new List<NamespaceReference>();
         }
 
@@ -92,7 +89,7 @@ namespace Subspace.TextTemplating
         /// </summary>
         internal void AppendLine()
         {
-            script.AppendLine();
+            Script.AppendLine();
         }
 
         /// <summary>
@@ -101,7 +98,7 @@ namespace Subspace.TextTemplating
         /// <param name="line">The line to append.</param>
         internal void AppendLine(string line)
         {
-            script.AppendLine(line);
+            Script.AppendLine(line);
         }
 
         /// <summary>
@@ -110,7 +107,7 @@ namespace Subspace.TextTemplating
         /// <param name="text">The text to append.</param>
         internal void Append(string text)
         {
-            script.Append(text);
+            Script.Append(text);
         }
 
         /// <summary>
@@ -120,7 +117,7 @@ namespace Subspace.TextTemplating
         /// <param name="args">An array of objects to format.</param>
         internal void AppendFormat(string format, params object[] args)
         {
-            script.AppendFormat(CultureInfo.InvariantCulture, format, args);
+            Script.AppendFormat(CultureInfo.InvariantCulture, format, args);
         }
 
         /// <summary>
@@ -179,9 +176,7 @@ namespace Subspace.TextTemplating
             {
                 if (IncludeSourceFileReferences && lines[i].Length > 0)
                 {
-                    script.AppendLine();
-                    script.AppendFormat(CultureInfo.InvariantCulture, "#line {0} \"{1}\"", lineNumber, sourceFilePath);
-                    script.AppendLine();
+                    WriteSourceFileReference(sourceFilePath, lineNumber);
                 }
 
                 Append(lines[i]);
@@ -196,6 +191,33 @@ namespace Subspace.TextTemplating
 
             return lines.Length;
         }
+
+        /// <summary>
+        ///     Gets the script string builder.
+        /// </summary>
+        protected StringBuilder Script
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        ///     Gets a value indicating whether this instance has a main method script.
+        /// </summary>
+        protected bool HasMainMethodScript
+        {
+            get
+            {
+                return _mainMethodScript != null;
+            }
+        }
+
+        /// <summary>
+        ///     Writes a source file reference.
+        /// </summary>
+        /// <param name="sourceFilePath">The source file path.</param>
+        /// <param name="lineNumber">The line number.</param>
+        protected abstract void WriteSourceFileReference(string sourceFilePath, int lineNumber);
 
         /// <summary>
         ///     Returns the source file path that matches the specified GUID.
@@ -218,65 +240,7 @@ namespace Subspace.TextTemplating
         ///     Returns the composed script.
         /// </summary>
         /// <returns>The script.</returns>
-        internal string ComposeScript()
-        {
-            StringBuilder output = new StringBuilder();
-            int nestingLevel = 0;
-
-            foreach (NamespaceReference namespaceReference in NamespaceReferences)
-            {
-                output.AppendFormat(
-                    CultureInfo.InvariantCulture,
-                    "using {0};",
-                    namespaceReference.Namespace);
-
-                output.AppendLine();
-            }
-
-            if (!string.IsNullOrEmpty(NamespaceName))
-            {
-                output.AppendFormat(
-                    CultureInfo.InvariantCulture,
-                    "namespace {0} {{",
-                    NamespaceName);
-
-                output.AppendLine();
-                nestingLevel++;
-            }
-
-            if (!string.IsNullOrEmpty(NamespaceName))
-            {
-                output.AppendFormat(
-                    CultureInfo.InvariantCulture,
-                    "public sealed class {0} {{",
-                    ClassName);
-
-                output.AppendLine();
-                nestingLevel++;
-            }
-
-            if (_mainMethodScript != null)
-            {
-                output.AppendFormat(
-                    CultureInfo.InvariantCulture,
-                    "public void {0}() {{",
-                    MainMethodName);
-
-                output.AppendLine();
-                output.AppendLine(MainMethodScript.ComposeScript());
-                output.AppendLine("}");
-            }
-
-            output.AppendLine(script.ToString());
-            output.AppendLine();
-
-            while (nestingLevel-- > 0)
-            {
-                output.Append("}");
-            }
-
-            return output.ToString();
-        }
+        internal abstract string ComposeScript();
 
         /// <summary>
         ///     Returns a value indicating whether the specified path is a local path.

@@ -8,9 +8,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using Microsoft.CSharp;
-
 using Subspace.TextTemplating.Properties;
+using Subspace.TextTemplating.ScriptBuilding;
 
 namespace Subspace.TextTemplating
 {
@@ -41,7 +40,7 @@ namespace Subspace.TextTemplating
     ///                 </description>
     ///             </item>
     ///             <item>
-    ///                 <term><see cref="TemplateOutputWriter">Output</see></term>
+    ///                 <term><see cref="TextTemplateOutputWriter">Output</see></term>
     ///                 <description>Provides a means to write to the script output.</description>
     ///             </item>
     ///         </list>
@@ -55,8 +54,10 @@ namespace Subspace.TextTemplating
         private List<string> additionalReferences = new List<string>();
         private string inputText;
         private string sourceFilePath;
+        private ScriptLanguage scriptLanguage = ScriptLanguage.CSharp;
+        private string scriptLanguageVersion = "v4.0";
 
-        private InlineScript documentScript;
+        private ScriptBuilder documentScript;
         private List<string> scriptParameters = new List<string>();
         private object[] parameterValues = new object[0];
 
@@ -180,11 +181,7 @@ namespace Subspace.TextTemplating
                 this.additionalReferences = additionalReferences.ToList();
             }
 
-            documentScript = new InlineScript()
-            {
-                NamespaceName = Constants.NamespaceName,
-                ClassName = Constants.ClassName
-            };
+            documentScript = ScriptBuilderFactory.Create(scriptLanguage, Constants.NamespaceName, Constants.ClassName);
 
             if (context != null)
             {
@@ -203,16 +200,21 @@ namespace Subspace.TextTemplating
             documentScript.AppendFormat("private {0} Context;", contextTypeName);
             documentScript.AppendLine();
 
-            documentScript.AppendLine("private TemplateOutputWriter Output;");
+            documentScript.AppendFormat("private {0} Output;", typeof(TextTemplateOutputWriter).Name);
+            documentScript.AppendLine();
 
             StringBuilder format = new StringBuilder();
-            format.AppendLine("public void {0}(ref TemplateOutputWriter output, {1} context)");
+            format.AppendLine("public void {0}(ref {1} output, {2} context)");
             format.AppendLine("{{");
             format.AppendLine("   Context = context;");
             format.AppendLine("   Output = output;");
             format.AppendLine("}}");
 
-            documentScript.AppendFormat(format.ToString(), Constants.InitializationMethodName, contextTypeName);
+            documentScript.AppendFormat(
+                format.ToString(),
+                Constants.InitializationMethodName,
+                typeof(TextTemplateOutputWriter).Name,
+                contextTypeName);
         }
 
         /// <summary>
@@ -383,11 +385,11 @@ namespace Subspace.TextTemplating
                 WriteScript(script, outputPath);
             }
 
-            CompilerResults results = CompileScript(script);
+            CompilerResults results = CompileScript(script, scriptLanguage);
 
             foreach (CompilerError error in results.Errors.Cast<CompilerError>().OrderBy(n => n.Line))
             {
-                TemplateFileSourceReference sourceReference = new TemplateFileSourceReference()
+                TextTemplateFileSourceReference sourceReference = new TextTemplateFileSourceReference()
                 {
                     Path = GetSourceFilePath(error.FileName),
                     Line = error.Line
@@ -395,14 +397,14 @@ namespace Subspace.TextTemplating
 
                 if (!error.IsWarning)
                 {
-                    TemplateFileException templateFileException = new TemplateFileException(GetCompilerErrorMessage(error), sourceReference);
+                    TextTemplateFileException templateFileException = new TextTemplateFileException(GetCompilerErrorMessage(error), sourceReference);
 
                     throw templateFileException;
                 }
             }
 
             Assembly assembly = results.CompiledAssembly;
-            TemplateOutputWriter outputWriter = new TemplateOutputWriter();
+            TextTemplateOutputWriter outputWriter = new TextTemplateOutputWriter();
             object documentScriptsInstance = assembly.CreateInstance(Constants.NamespaceName + "." + Constants.ClassName);
 
             // Call the parameter intialization method.
@@ -418,7 +420,7 @@ namespace Subspace.TextTemplating
             // Execute the main method.
             outputWriter.StartCapture();
 
-            MethodInfo mainMethod = classType.GetMethod(InlineScript.MainMethodName);
+            MethodInfo mainMethod = classType.GetMethod(ScriptBuilder.MainMethodName);
             mainMethod.Invoke(documentScriptsInstance, new object[] { });
 
             return outputWriter.EndCapture();
@@ -494,19 +496,11 @@ namespace Subspace.TextTemplating
             // Append the code to the document script.
             if (fragmentType == FragmentType.Script)
             {
-                documentScript.MainMethodScript.AppendFragment(fragment, lineNumber, sourceFilePath);
+                ParseScript(fragment, lineNumber, sourceFilePath);
             }
             else if (fragmentType == FragmentType.AutoWriteScript)
             {
-                documentScript.MainMethodScript.AppendFragment(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Output.Write({0});",
-                        fragment),
-                    lineNumber,
-                    sourceFilePath);
-
-                documentScript.MainMethodScript.AppendLine();
+                ParseAutoWriteScript(fragment, lineNumber, sourceFilePath);
             }
             else if (fragmentType == FragmentType.ClassBody)
             {
@@ -514,45 +508,145 @@ namespace Subspace.TextTemplating
             }
             else if (fragmentType == FragmentType.Template)
             {
-                //TODO: support the language attribute.
+                ParseTemplateDirective(fragment);
             }
             else if (fragmentType == FragmentType.Include)
             {
-                string path = ExtractAttribute(fragment, "file");
-                path = Path.Combine(scriptDirectory, path.Trim(new char[] { '\'', '\"' }));
-
-                ParseFragment(File.ReadAllText(path), 1, path);
+                ParseIncludeDirective(fragment);
             }
             else if (fragmentType == FragmentType.NamespaceImport)
             {
-                documentScript.NamespaceReferences.Add(
-                    new NamespaceReference(ExtractAttribute(fragment, "namespace")));
+                ParseNamespaceDirective(fragment);
             }
             else if (fragmentType == FragmentType.ScriptParameter)
             {
-                scriptParameters.Add(ExtractAttribute(fragment, "name"));
+                ParseScriptParameterDirective(fragment);
             }
             else if (fragmentType == FragmentType.Markup)
             {
-                while (fragment.StartsWith(Environment.NewLine, StringComparison.Ordinal))
-                {
-                    documentScript.MainMethodScript.AppendFormat(
-                        "Output.WriteLine();",
-                        fragment.Replace("\"", "\"\""));
+                fragment = ParseMarkup(fragment);
+            }
+        }
 
-                    documentScript.MainMethodScript.AppendLine();
-                    fragment = fragment.Substring(Environment.NewLine.Length);
-                }
+        /// <summary>
+        ///     Parses the script from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        /// <param name="lineNumber">The line number.</param>
+        /// <param name="sourceFilePath">The source file path.</param>
+        private void ParseScript(string fragment, int lineNumber, string sourceFilePath)
+        {
+            documentScript.MainMethodScript.AppendFragment(fragment, lineNumber, sourceFilePath);
+        }
 
-                if (fragment.Length > 0)
+        /// <summary>
+        ///     Parses the auto write script from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        /// <param name="lineNumber">The line number.</param>
+        /// <param name="sourceFilePath">The source file path.</param>
+        private void ParseAutoWriteScript(string fragment, int lineNumber, string sourceFilePath)
+        {
+            documentScript.MainMethodScript.AppendFragment(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Output.Write({0});",
+                    fragment),
+                lineNumber,
+                sourceFilePath);
+
+            documentScript.MainMethodScript.AppendLine();
+        }
+
+        /// <summary>
+        ///     Parses the template directive from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        private void ParseTemplateDirective(string fragment)
+        {
+            string language = ExtractDirectiveAttribute(fragment, "language") ?? "";
+
+            if (language.StartsWith("C#"))
+            {
+                scriptLanguage = ScriptLanguage.CSharp;
+
+                if (language.Length > 2)
                 {
-                    documentScript.MainMethodScript.AppendFormat(
-                        "Output.Write(@\"{0}\");",
-                        fragment.Replace("\"", "\"\""));
+                    scriptLanguageVersion = language.Substring(2);
                 }
+            }
+            else if (language.StartsWith("VB"))
+            {
+                scriptLanguage = ScriptLanguage.VisualBasic;
+
+                if (language.Length > 2)
+                {
+                    scriptLanguageVersion = language.Substring(2);
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException(InternalExceptionStrings.InvalidOperationException_UnrecognizedLanguageIdentifier);
+            }
+        }
+
+        /// <summary>
+        ///     Parses the include directive from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        private void ParseIncludeDirective(string fragment)
+        {
+            string path = ExtractDirectiveAttribute(fragment, "file");
+            path = Path.Combine(scriptDirectory, path.Trim(new char[] { '\'', '\"' }));
+
+            ParseFragment(File.ReadAllText(path), 1, path);
+        }
+
+        /// <summary>
+        ///     Parses the namespace directive from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        private void ParseNamespaceDirective(string fragment)
+        {
+            documentScript.NamespaceReferences.Add(
+                new NamespaceReference(ExtractDirectiveAttribute(fragment, "namespace")));
+        }
+
+        /// <summary>
+        ///     Parses the script parameter directive from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        private void ParseScriptParameterDirective(string fragment)
+        {
+            scriptParameters.Add(ExtractDirectiveAttribute(fragment, "name"));
+        }
+
+        /// <summary>
+        ///     Parses the markup from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        /// <returns></returns>
+        private string ParseMarkup(string fragment)
+        {
+            while (fragment.StartsWith(Environment.NewLine, StringComparison.Ordinal))
+            {
+                documentScript.MainMethodScript.AppendFormat(
+                    "Output.WriteLine();",
+                    fragment.Replace("\"", "\"\""));
 
                 documentScript.MainMethodScript.AppendLine();
+                fragment = fragment.Substring(Environment.NewLine.Length);
             }
+
+            if (fragment.Length > 0)
+            {
+                documentScript.MainMethodScript.AppendFormat(
+                    "Output.Write(@\"{0}\");",
+                    fragment.Replace("\"", "\"\""));
+            }
+
+            documentScript.MainMethodScript.AppendLine();
+            return fragment;
         }
 
         /// <summary>
@@ -561,7 +655,7 @@ namespace Subspace.TextTemplating
         /// <param name="text">The text.</param>
         /// <param name="attributeName">The name of the attribute.</param>
         /// <returns>The extracted attribute value.</returns>
-        private static string ExtractAttribute(string text, string attributeName)
+        private static string ExtractDirectiveAttribute(string text, string attributeName)
         {
             Regex regex = new Regex(
                 string.Format(
@@ -681,14 +775,11 @@ namespace Subspace.TextTemplating
         ///     Compiles the specified script.
         /// </summary>
         /// <param name="script">The script.</param>
+        /// <param name="scriptLanguage">The script language.</param>
         /// <returns>The compiler results.</returns>
-        private CompilerResults CompileScript(string script)
+        private CompilerResults CompileScript(string script, ScriptLanguage scriptLanguage)
         {
-            CSharpCodeProvider provider = new CSharpCodeProvider(
-                new Dictionary<string, string>()
-                {
-                    { "CompilerVersion", Constants.InlineScriptingCompilerVersion }
-                });
+            CodeDomProvider provider = CodeDomProviderFactory.Create(scriptLanguage, scriptLanguageVersion);
 
             CompilerParameters compilerParameters = new CompilerParameters();
             compilerParameters.GenerateExecutable = false;

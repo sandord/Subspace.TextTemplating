@@ -7,42 +7,42 @@ using System.Text;
 namespace Subspace.TextTemplating
 {
     /// <summary>
-    ///     The exception that is thrown when processing of a template file has failed.
+    ///     The exception that is thrown when processing of a text template file has failed.
     /// </summary>
     [Serializable]
-    public class TemplateFileException : Exception
+    public class TextTemplateFileException : Exception
     {
         /// <summary>
         ///     Gets a reference to a line in the related template file.
         /// </summary>
-        public TemplateFileSourceReference SourceReference
+        public TextTemplateFileSourceReference SourceReference
         {
             get;
             private set;
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="TemplateFileException"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateFileException"/> class.
         /// </summary>
-        public TemplateFileException()
+        public TextTemplateFileException()
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="TemplateFileException"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateFileException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        public TemplateFileException(string message)
+        public TextTemplateFileException(string message)
             : base(message)
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="TemplateFileException"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateFileException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="sourceReference">The source reference.</param>
-        public TemplateFileException(string message, TemplateFileSourceReference sourceReference)
+        public TextTemplateFileException(string message, TextTemplateFileSourceReference sourceReference)
             : this(message)
         {
             this.SourceReference = sourceReference;
@@ -62,14 +62,14 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="TemplateFileException"/> class.
+        ///     Initializes a new instance of the <see cref="TextTemplateFileException"/> class.
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> that holds the serialized object data about the exception being thrown.</param>
         /// <param name="context">The <see cref="StreamingContext"/> that contains contextual information about the source or destination.</param>
-        protected TemplateFileException(SerializationInfo info, StreamingContext context)
+        protected TextTemplateFileException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            SourceReference = (TemplateFileSourceReference)info.GetValue("SourceReference", typeof(TemplateFileSourceReference));
+            SourceReference = (TextTemplateFileSourceReference)info.GetValue("SourceReference", typeof(TextTemplateFileSourceReference));
         }
     }
 }

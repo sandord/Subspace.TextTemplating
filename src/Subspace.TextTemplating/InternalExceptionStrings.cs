@@ -21,5 +21,11 @@
 
         internal static readonly string ArgumentException_TypeIsNotPublic =
             "Cannot accept the instance type because it is not public.";
+
+        internal static readonly string InvalidOperationException_UnrecognizedLanguageIdentifier =
+            "Unrecognized language identifier.";
+
+        internal static readonly string InvalidOperationException_UnsupportedLanguage =
+            "Unsupported language.";
     }
 }
