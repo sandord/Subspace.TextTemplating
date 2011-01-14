@@ -1,10 +1,4 @@
-﻿/*
-This code is released under the Creative Commons Attribute 3.0 Unported license.
-You are free to share and reuse this code as long as you keep a reference to the author.
-See http://creativecommons.org/licenses/by/3.0/
-*/
-
-namespace Subspace.TextTemplating
+﻿namespace Subspace.TextTemplating
 {
     /// <summary>
     ///     Contains exception strings that have a technical nature and are not intended for the end
