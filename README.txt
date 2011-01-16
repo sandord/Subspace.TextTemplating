@@ -1,5 +1,6 @@
 Subspace.TextTemplating is a .NET text templating library. It has the following features:
 
+* Supports the C# language
 * Partially T4 compatible
 * Supports runtime transformation as opposed to T4
 * Does not depend on Visual Studio as opposed to T4
@@ -11,3 +12,5 @@ Some of the possible uses are:
 
 * Store e-mail templates in a database and transform them on the fly
 * Change text template files without recompiling your application
+
+You can take a look at the supplied unit tests for some usage examples.
