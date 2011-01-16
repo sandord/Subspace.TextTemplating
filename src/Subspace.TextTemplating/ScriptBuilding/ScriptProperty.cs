@@ -6,9 +6,9 @@ using System.Text;
 namespace Subspace.TextTemplating.ScriptBuilding
 {
     /// <summary>
-    ///     A script parameter.
+    ///     Describes a property for which a value can be passed into a script.
     /// </summary>
-    internal class ScriptParameter
+    internal class ScriptProperty
     {
         /// <summary>
         ///     Gets the name.
@@ -29,11 +29,11 @@ namespace Subspace.TextTemplating.ScriptBuilding
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="ScriptParameter"/> class.
+        ///     Initializes a new instance of the <see cref="ScriptProperty"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="typeName">The name of the type.</param>
-        public ScriptParameter(string name, string typeName)
+        public ScriptProperty(string name, string typeName)
         {
             if (name == null)
             {

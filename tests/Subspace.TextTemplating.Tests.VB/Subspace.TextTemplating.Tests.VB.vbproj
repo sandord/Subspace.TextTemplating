@@ -110,9 +110,9 @@
     </None>
     <Content Include="Templates\Template1.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>Template1.vb</LastGenOutput>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <CustomToolNamespace>My.Templates</CustomToolNamespace>
+      <LastGenOutput>Template1.vb</LastGenOutput>
     </Content>
   </ItemGroup>
   <ItemGroup>

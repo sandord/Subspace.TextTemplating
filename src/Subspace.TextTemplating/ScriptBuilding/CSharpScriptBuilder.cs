@@ -43,33 +43,33 @@ namespace Subspace.TextTemplating.ScriptBuilding
         }
 
         /// <summary>
-        ///     Appends the script that appends the specified parameters.
+        ///     Appends the script that appends the specified properties.
         /// </summary>
-        /// <param name="scriptParameters">The script parameters.</param>
-        public override void AppendParametersScript(List<ScriptParameter> scriptParameters)
+        /// <param name="properties">The properties.</param>
+        public override void AppendPropertiesScript(List<ScriptProperty> properties)
         {
-            StringBuilder parameterDefinitions = new StringBuilder();
-            StringBuilder parameterAssignments = new StringBuilder();
+            StringBuilder propertyDefinitions = new StringBuilder();
+            StringBuilder propertyAssignments = new StringBuilder();
 
-            foreach (ScriptParameter scriptParameter in scriptParameters)
+            foreach (ScriptProperty property in properties)
             {
-                AppendPrivatePropertyDeclaration(scriptParameter.Name, scriptParameter.TypeName);
+                AppendPrivatePropertyDeclaration(property.Name, property.TypeName);
 
-                if (parameterDefinitions.Length > 0)
+                if (propertyDefinitions.Length > 0)
                 {
-                    parameterDefinitions.Append(", ");
+                    propertyDefinitions.Append(", ");
                 }
 
-                parameterDefinitions.AppendFormat(
+                propertyDefinitions.AppendFormat(
                     CultureInfo.InvariantCulture,
                     "{0} {1}",
-                    scriptParameter.TypeName,
-                    scriptParameter.Name);
+                    property.TypeName,
+                    property.Name);
 
-                parameterAssignments.AppendFormat(
+                propertyAssignments.AppendFormat(
                     CultureInfo.InvariantCulture,
                     "this.{0} = {0};",
-                    scriptParameter.Name);
+                    property.Name);
             }
 
             Script.Append(
@@ -81,9 +81,9 @@ namespace Subspace.TextTemplating.ScriptBuilding
                         {2}
                     }}                    
                     ",
-                    Constants.ParameterInitializationMethodName,
-                    parameterDefinitions.ToString(),
-                    parameterAssignments.ToString()));
+                    Constants.PropertyInitializationMethodName,
+                    propertyDefinitions.ToString(),
+                    propertyAssignments.ToString()));
 
             Script.AppendLine();
         }

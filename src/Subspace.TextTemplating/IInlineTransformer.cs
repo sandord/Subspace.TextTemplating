@@ -15,8 +15,8 @@ namespace Subspace.TextTemplating
         ///     Transforms the specified text file and returns the result.
         /// </summary>
         /// <param name="relativePath">The relative path.</param>
-        /// <param name="parameterValues">The parameter values.</param>
+        /// <param name="propertyValues">The property values.</param>
         /// <returns>The result of the transformation.</returns>
-        string TransformRelativeFile(string relativePath, params object[] parameterValues);
+        string TransformRelativeFile(string relativePath, params object[] propertyValues);
     }
 }

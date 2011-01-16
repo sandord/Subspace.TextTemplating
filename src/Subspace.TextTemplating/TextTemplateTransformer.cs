@@ -57,8 +57,8 @@ namespace Subspace.TextTemplating
         private string scriptLanguageVersion = "v4.0";
 
         private IOuterScriptBuilder scriptBuilder;
-        private List<ScriptParameter> scriptParameters = new List<ScriptParameter>();
-        private object[] parameterValues = new object[0];
+        private List<ScriptProperty> scriptProperties = new List<ScriptProperty>();
+        private object[] propertyValues = new object[0];
         private string contextTypeName;
         private string contextNamespace;
 
@@ -244,10 +244,10 @@ namespace Subspace.TextTemplating
         ///     Transforms the specified text file and returns the result.
         /// </summary>
         /// <param name="path">The path of the text file.</param>
-        /// <param name="parameters">The parameter values.</param>
+        /// <param name="propertyValues">The property values.</param>
         /// <returns>The result of the transformation.</returns>
         /// <exception cref="ArgumentNullException">The specified path is <c>null</c>.</exception>
-        public string TransformFile(string path, params object[] parameters)
+        public string TransformFile(string path, params object[] propertyValues)
         {
             if (path == null)
             {
@@ -256,7 +256,7 @@ namespace Subspace.TextTemplating
 
             scriptDirectory = Path.Combine(baseDirectory, Path.GetDirectoryName(path));
 
-            return TransformText(File.ReadAllText(path), path, parameters);
+            return TransformText(File.ReadAllText(path), path, propertyValues);
         }
 
         /// <summary>
@@ -276,12 +276,12 @@ namespace Subspace.TextTemplating
         /// </summary>
         /// <param name="text">The text to transform.</param>
         /// <param name="sourcePath">The path of the source file.</param>
-        /// <param name="parameterValues">The parameter values.</param>
+        /// <param name="propertyValues">The property values.</param>
         /// <returns>The result of the transformation.</returns>
         /// <exception cref="ArgumentNullException">The specified <paramref name="text"/> is <c>null</c>.</exception>
-        public string TransformText(string text, string sourcePath, params object[] parameterValues)
+        public string TransformText(string text, string sourcePath, params object[] propertyValues)
         {
-            this.parameterValues = parameterValues;
+            this.propertyValues = propertyValues;
             scriptBuilder.IncludeSourceFileReferences = IncludeSourceFileReferences;
 
             Parse(text, sourcePath);
@@ -293,9 +293,9 @@ namespace Subspace.TextTemplating
         ///     Transforms the specified text file and returns the result.
         /// </summary>
         /// <param name="relativePath">The relative path.</param>
-        /// <param name="parameterValues">The parameter values.</param>
+        /// <param name="propertyValues">The property values.</param>
         /// <returns>The result of the transformation.</returns>
-        public string TransformRelativeFile(string relativePath, params object[] parameterValues)
+        public string TransformRelativeFile(string relativePath, params object[] propertyValues)
         {
             if (relativePath == null)
             {
@@ -308,7 +308,7 @@ namespace Subspace.TextTemplating
 
             TextTemplateTransformer transformer = new TextTemplateTransformer();
 
-            return transformer.TransformFile(Path.Combine(scriptDirectory, relativePath), parameterValues);
+            return transformer.TransformFile(Path.Combine(scriptDirectory, relativePath), propertyValues);
         }
 
         /// <summary>
@@ -412,7 +412,7 @@ namespace Subspace.TextTemplating
         /// <returns>The resulting document.</returns>
         private string Execute(string outputPath)
         {
-            scriptBuilder.AppendParametersScript(scriptParameters);
+            scriptBuilder.AppendPropertiesScript(scriptProperties);
 
             string script = scriptBuilder.ToString();
 
@@ -443,10 +443,10 @@ namespace Subspace.TextTemplating
             TextTemplateOutputWriter outputWriter = new TextTemplateOutputWriter();
             object documentScriptsInstance = assembly.CreateInstance(Constants.NamespaceName + "." + Constants.ClassName);
 
-            // Call the parameter intialization method.
+            // Call the property intialization method.
             Type classType = assembly.GetType(Constants.NamespaceName + "." + Constants.ClassName);
-            MethodInfo initMethod = classType.GetMethod(Constants.ParameterInitializationMethodName);
-            initMethod.Invoke(documentScriptsInstance, parameterValues);
+            MethodInfo initMethod = classType.GetMethod(Constants.PropertyInitializationMethodName);
+            initMethod.Invoke(documentScriptsInstance, propertyValues);
 
             // Call the intialization method.
             classType = assembly.GetType(Constants.NamespaceName + "." + Constants.ClassName);
@@ -511,10 +511,10 @@ namespace Subspace.TextTemplating
                 startMarker += Constants.DirectiveMarker + Constants.NamespaceImportMarker;
                 fragmentType = FragmentType.NamespaceImport;
             }
-            else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.ScriptParameterMarker, StringComparison.Ordinal))
+            else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.ScriptPropertyMarker, StringComparison.Ordinal))
             {
-                startMarker += Constants.ScriptParameterMarker;
-                fragmentType = FragmentType.ScriptParameter;
+                startMarker += Constants.ScriptPropertyMarker;
+                fragmentType = FragmentType.Property;
             }
             else
             {
@@ -554,9 +554,9 @@ namespace Subspace.TextTemplating
             {
                 ParseNamespaceDirective(fragment);
             }
-            else if (fragmentType == FragmentType.ScriptParameter)
+            else if (fragmentType == FragmentType.Property)
             {
-                ParseScriptParameterDirective(fragment);
+                ParseScriptPropertyDirective(fragment);
             }
             else if (fragmentType == FragmentType.Markup)
             {
@@ -619,13 +619,13 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Parses the script parameter directive from the specified fragment.
+        ///     Parses the script property directive from the specified fragment.
         /// </summary>
         /// <param name="fragment">The fragment.</param>
-        private void ParseScriptParameterDirective(string fragment)
+        private void ParseScriptPropertyDirective(string fragment)
         {
-            scriptParameters.Add(
-                new ScriptParameter(
+            scriptProperties.Add(
+                new ScriptProperty(
                     ExtractDirectiveAttribute(fragment, Constants.NameAttributeName),
                     ExtractDirectiveAttribute(fragment, Constants.TypeAttributeName)));
         }

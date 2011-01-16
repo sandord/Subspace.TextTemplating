@@ -46,8 +46,8 @@ namespace Subspace.TextTemplating
         NamespaceImport,
 
         /// <summary>
-        ///     A script parameter directive.
+        ///     A property directive.
         /// </summary>
-        ScriptParameter
+        Property
     }
 }

@@ -93,9 +93,9 @@ namespace Subspace.TextTemplating.ScriptBuilding
         void AppendInitializationMethodScript(string contextTypeName);
 
         /// <summary>
-        ///     Appends the script that appends the specified parameters.
+        ///     Appends the script that appends the specified properties.
         /// </summary>
-        /// <param name="scriptParameters">The script parameters.</param>
-        void AppendParametersScript(List<ScriptParameter> scriptParameters);
+        /// <param name="properties">The properties.</param>
+        void AppendPropertiesScript(List<ScriptProperty> properties);
     }
 }

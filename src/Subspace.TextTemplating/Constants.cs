@@ -23,9 +23,9 @@ namespace Subspace.TextTemplating
         internal const string InitializationMethodName = "__initialize";
 
         /// <summary>
-        ///     The name of the script parameter initialization method.
+        ///     The name of the script property initialization method.
         /// </summary>
-        internal const string ParameterInitializationMethodName = "__initializeParameters";
+        internal const string PropertyInitializationMethodName = "__initializeProperties";
 
         /// <summary>
         ///     The start marker of inline scripts.
@@ -68,9 +68,9 @@ namespace Subspace.TextTemplating
         internal const string ScriptIncludeMarker = "include";
 
         /// <summary>
-        ///     The marker that is placed directly after the directive marker, to mark a script parameter directive.
+        ///     The marker that is placed directly after the directive marker, to mark a script property directive.
         /// </summary>
-        internal const string ScriptParameterMarker = "parameter";
+        internal const string ScriptPropertyMarker = "property";
 
         /// <summary>
         ///     The name of the main method name.

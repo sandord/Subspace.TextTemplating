@@ -17,15 +17,15 @@ namespace Subspace.TextTemplating.Tests
     public class TextTemplateTransformerNonT4Tests
     {
         [Test]
-        public void Transforming_Template4WithParameter_ResultsInExpectedOutput()
+        public void Transforming_Template4WithProperty_ResultsInExpectedOutput()
         {
             // Arrange.
             var transformer = new TextTemplateTransformer();
-            var parameterValue = "test-value";
-            var expected = "<html>\r\n<head>\r\n    <title>\r\n    </title>\r\n</head>\r\n<body>\r\n    Parameter 1 : " + parameterValue + "\r\n</body>\r\n</html>\r\n";
+            var propertyValue = "test-value";
+            var expected = "<html>\r\n<head>\r\n    <title>\r\n    </title>\r\n</head>\r\n<body>\r\n    Property 1 : " + propertyValue + "\r\n</body>\r\n</html>\r\n";
 
             // Act.
-            string output = transformer.TransformFile(@"Templates\NonT4Features\Template1.tt", parameterValue);
+            string output = transformer.TransformFile(@"Templates\NonT4Features\Template1.tt", propertyValue);
 
             // Assert.
             Assert.AreEqual(expected, output);
@@ -36,7 +36,7 @@ namespace Subspace.TextTemplating.Tests
         {
             // Arrange.
             var transformer = new TextTemplateTransformer();
-            var expected = "<html>\r\n<head>\r\n    <title>\r\n    </title>\r\n</head>\r\n<body>\r\n    Parameter 1 : passed-through-test-value\r\n</body>\r\n</html>\r\n";
+            var expected = "<html>\r\n<head>\r\n    <title>\r\n    </title>\r\n</head>\r\n<body>\r\n    Property 1 : passed-through-test-value\r\n</body>\r\n</html>\r\n";
 
             // Act.
             string output = transformer.TransformFile(@"Templates\NonT4Features\Template2.tt");

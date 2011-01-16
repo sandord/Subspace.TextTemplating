@@ -51,7 +51,7 @@
     <Compile Include="ScriptBuilding\IInnerScriptBuilder.cs" />
     <Compile Include="ScriptBuilding\IOuterScriptBuilder.cs" />
     <Compile Include="ScriptBuilding\ScriptBuilderFactory.cs" />
-    <Compile Include="ScriptBuilding\ScriptParameter.cs" />
+    <Compile Include="ScriptBuilding\ScriptProperty.cs" />
     <Compile Include="ScriptBuilding\VisualBasicScriptBuilder.cs" />
     <Compile Include="ScriptBuilding\CSharpScriptBuilder.cs" />
     <Compile Include="FragmentType.cs" />

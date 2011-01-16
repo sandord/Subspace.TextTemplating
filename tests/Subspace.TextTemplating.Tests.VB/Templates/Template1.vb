@@ -13,7 +13,50 @@ Namespace My.Templates
     <System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "10.0.0.0")>  _
     Partial Public Class Template1
         Inherits Template1Base
+        #Region "ToString Helpers"
+        '''<summary>
+        '''Utility class to produce culture-oriented representation of an object as a string.
+        '''</summary>
+        Public Class ToStringInstanceHelper
+            Private formatProviderField  As System.IFormatProvider = Global.System.Globalization.CultureInfo.InvariantCulture
+            '''<summary>
+            '''Gets or sets format provider to be used by ToStringWithCulture method.
+            '''</summary>
+            Public Property FormatProvider() As System.IFormatProvider
+                Get
+                    Return Me.formatProviderField 
+                End Get
+                Set
+                    If (Not (value) Is Nothing) Then
+                        Me.formatProviderField  = value
+                    End If
+                End Set
+            End Property
+            '''<summary>
+            '''This is called from the compile/run appdomain to convert objects within an expression block to a string
+            '''</summary>
+            Public Function ToStringWithCulture(ByVal objectToConvert As Object) As String
+                If (objectToConvert Is Nothing) Then
+                    Throw New Global.System.ArgumentNullException("objectToConvert")
+                End If
+                Dim t As System.Type = objectToConvert.GetType
+                Dim method As System.Reflection.MethodInfo = t.GetMethod("ToString", New System.Type() {GetType(System.IFormatProvider)})
+                If (method Is Nothing) Then
+                    Return objectToConvert.ToString
+                Else
+                    Return CType(method.Invoke(objectToConvert, New Object() {Me.formatProviderField }),String)
+                End If
+            End Function
+        End Class
+        Private toStringHelperField As ToStringInstanceHelper = New ToStringInstanceHelper()
+        Public ReadOnly Property ToStringHelper() As ToStringInstanceHelper
+            Get
+                Return Me.toStringHelperField
+            End Get
+        End Property
+        #End Region
         Public Overridable Function TransformText() As String
+            Me.GenerationEnvironment = Nothing
             Me.Write("<html>"&Global.Microsoft.VisualBasic.ChrW(13)&Global.Microsoft.VisualBasic.ChrW(10)&"<head>"&Global.Microsoft.VisualBasic.ChrW(13)&Global.Microsoft.VisualBasic.ChrW(10)&"    <title>"&Global.Microsoft.VisualBasic.ChrW(13)&Global.Microsoft.VisualBasic.ChrW(10)&"    </title>"&Global.Microsoft.VisualBasic.ChrW(13)&Global.Microsoft.VisualBasic.ChrW(10)&"</head>"&Global.Microsoft.VisualBasic.ChrW(13)&Global.Microsoft.VisualBasic.ChrW(10)&"<body>"&Global.Microsoft.VisualBasic.ChrW(13)&Global.Microsoft.VisualBasic.ChrW(10)&"    ")
             
             #ExternalSource("C:\Users\Sandor\Documents\Visual Studio 2010\Projects\Subspace.TextTemplating\tests\Subspace.TextTemplating.Tests.VB\Templates\Template1.tt",8)
@@ -199,48 +242,6 @@ Namespace My.Templates
             Me.indentLengths.Clear
             Me.currentIndentField = ""
         End Sub
-        #End Region
-        #Region "ToString Helpers"
-        '''<summary>
-        '''Utility class to produce culture-oriented representation of an object as a string.
-        '''</summary>
-        Public Class ToStringInstanceHelper
-            Private formatProviderField  As System.IFormatProvider = Global.System.Globalization.CultureInfo.InvariantCulture
-            '''<summary>
-            '''Gets or sets format provider to be used by ToStringWithCulture method.
-            '''</summary>
-            Public Property FormatProvider() As System.IFormatProvider
-                Get
-                    Return Me.formatProviderField 
-                End Get
-                Set
-                    If (Not (value) Is Nothing) Then
-                        Me.formatProviderField  = value
-                    End If
-                End Set
-            End Property
-            '''<summary>
-            '''This is called from the compile/run appdomain to convert objects within an expression block to a string
-            '''</summary>
-            Public Function ToStringWithCulture(ByVal objectToConvert As Object) As String
-                If (objectToConvert Is Nothing) Then
-                    Throw New Global.System.ArgumentNullException("objectToConvert")
-                End If
-                Dim t As System.Type = objectToConvert.GetType
-                Dim method As System.Reflection.MethodInfo = t.GetMethod("ToString", New System.Type() {GetType(System.IFormatProvider)})
-                If (method Is Nothing) Then
-                    Return objectToConvert.ToString
-                Else
-                    Return CType(method.Invoke(objectToConvert, New Object() {Me.formatProviderField }),String)
-                End If
-            End Function
-        End Class
-        Private toStringHelperField As ToStringInstanceHelper = New ToStringInstanceHelper()
-        Public ReadOnly Property ToStringHelper() As ToStringInstanceHelper
-            Get
-                Return Me.toStringHelperField
-            End Get
-        End Property
         #End Region
     End Class
     #End Region

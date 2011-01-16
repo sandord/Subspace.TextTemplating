@@ -42,10 +42,10 @@ namespace Subspace.TextTemplating.ScriptBuilding
         }
 
         /// <summary>
-        ///     Appends the script that appends the specified parameters.
+        ///     Appends the script that appends the specified properties.
         /// </summary>
-        /// <param name="scriptParameters">The script parameters.</param>
-        public override void AppendParametersScript(List<ScriptParameter> scriptParameters)
+        /// <param name="properties">The properties.</param>
+        public override void AppendPropertiesScript(List<ScriptProperty> properties)
         {
             throw new NotImplementedException();
         }
