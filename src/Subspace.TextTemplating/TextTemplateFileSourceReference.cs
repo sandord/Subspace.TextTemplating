@@ -43,7 +43,7 @@ namespace Subspace.TextTemplating
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                return false;
             }
 
             TextTemplateFileSourceReference instance = (TextTemplateFileSourceReference)obj;

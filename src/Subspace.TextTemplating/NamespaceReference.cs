@@ -27,19 +27,5 @@ namespace Subspace.TextTemplating
         {
             this.Namespace = @namespace;
         }
-
-        /// <summary>
-        ///     Initializes a new instance of the specified <see cref="NamespaceReference"/> class.
-        /// </summary>
-        /// <param name="type">The type of which to use the namespace to initialize the instance.</param>
-        public NamespaceReference(Type type)
-        {
-            if (type == null)
-            {
-                throw new ArgumentNullException("type");
-            }
-
-            this.Namespace = type.Namespace;
-        }
     }
 }

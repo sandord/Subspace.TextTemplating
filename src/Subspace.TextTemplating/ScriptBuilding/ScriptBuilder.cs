@@ -8,86 +8,118 @@ using System.Globalization;
 namespace Subspace.TextTemplating.ScriptBuilding
 {
     /// <summary>
-    ///     Provides a means of building a script that is suitable for execution.
+    ///     Provides means of building a script that is suitable for execution.
     /// </summary>
-    internal abstract class ScriptBuilder
+    internal abstract class ScriptBuilder : IOuterScriptBuilder, IInnerScriptBuilder
     {
         private static readonly object sourceFilePathsLock = new object();
         private static IDictionary<Guid, string> sourceFilePaths = new Dictionary<Guid, string>();
 
-        private ScriptBuilder _mainMethodScript;
+        private string namespaceName;
+        private string className;
+        private IInnerScriptBuilder _innerScriptBuilder;
 
         /// <summary>
-        ///     The name of the main method.
+        ///     Gets a value indicating whether this instance is empty.
         /// </summary>
-        internal static readonly string MainMethodName = "__main";
-
-        /// <summary>
-        ///     Gets or sets the name of the namespace the script will be contained in.
-        /// </summary>
-        internal string NamespaceName
+        public bool IsEmpty
         {
-            get;
-            set;
+            get
+            {
+                return Script.Length == 0;
+            }
         }
 
         /// <summary>
-        ///     Gets or sets the name of the class the script will be contained in.
+        ///     Gets the inner script builder.
         /// </summary>
-        internal string ClassName
+        public IInnerScriptBuilder InnerScriptBuilder
         {
-            get;
-            set;
+            get
+            {
+                if (_innerScriptBuilder == null)
+                {
+                    _innerScriptBuilder = ScriptBuilderFactory.Create(ScriptLanguage, namespaceName, className);
+                }
+
+                return _innerScriptBuilder;
+            }
         }
 
         /// <summary>
         ///     Gets the namespace references to include in the script output.
         /// </summary>
-        internal List<NamespaceReference> NamespaceReferences
+        public List<NamespaceReference> NamespaceReferences
         {
             get;
             private set;
         }
 
         /// <summary>
-        ///     Gets the main method script.
-        /// </summary>
-        internal ScriptBuilder MainMethodScript
-        {
-            get
-            {
-                if (_mainMethodScript == null)
-                {
-                    _mainMethodScript = new CSharpScriptBuilder();
-                }
-
-                return _mainMethodScript;
-            }
-        }
-
-        /// <summary>
         ///     Gets or sets value indicating whether to include source file references in the
         ///     generated code.
         /// </summary>
-        internal bool IncludeSourceFileReferences
+        public bool IncludeSourceFileReferences
         {
             get;
             set;
         }
 
         /// <summary>
+        ///     Gets the name of the main method.
+        /// </summary>
+        public string MainMethodName
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        ///     Gets the script language.
+        /// </summary>
+        protected abstract ScriptLanguage ScriptLanguage
+        {
+            get;
+        }
+
+        /// <summary>
+        ///     Gets the script string builder.
+        /// </summary>
+        protected StringBuilder Script
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        ///     Gets the script nesting stack.
+        /// </summary>
+        protected Stack<string> ScriptNestingStack
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
         ///     Initializes a new instance of the <see cref="ScriptBuilder"/> class.
         /// </summary>
-        internal ScriptBuilder()
+        /// <param name="namespaceName">The namespace name.</param>
+        /// <param name="className">The class name.</param>
+        public ScriptBuilder(string namespaceName, string className)
         {
+            this.namespaceName = namespaceName;
+            this.className = className;
+
             Script = new StringBuilder();
+            ScriptNestingStack = new Stack<string>();
+            MainMethodName = Constants.MainMethodName;
             NamespaceReferences = new List<NamespaceReference>();
         }
 
         /// <summary>
         ///     Appends an empty line.
         /// </summary>
-        internal void AppendLine()
+        public void AppendLine()
         {
             Script.AppendLine();
         }
@@ -95,44 +127,29 @@ namespace Subspace.TextTemplating.ScriptBuilding
         /// <summary>
         ///     Appends the specified line.
         /// </summary>
-        /// <param name="line">The line to append.</param>
-        internal void AppendLine(string line)
+        /// <param name="text">The text to write.</param>
+        public void AppendLine(string text)
         {
-            Script.AppendLine(line);
+            Script.AppendLine(text);
         }
 
         /// <summary>
-        ///     Appends the specified text.
-        /// </summary>
-        /// <param name="text">The text to append.</param>
-        internal void Append(string text)
-        {
-            Script.Append(text);
-        }
-
-        /// <summary>
-        ///     Appends the specified format.
-        /// </summary>
-        /// <param name="format">A composite format string.</param>
-        /// <param name="args">An array of objects to format.</param>
-        internal void AppendFormat(string format, params object[] args)
-        {
-            Script.AppendFormat(CultureInfo.InvariantCulture, format, args);
-        }
-
-        /// <summary>
-        ///     Appends the specified fragment.
+        ///     Appends the specified script fragment.
         /// </summary>
         /// <param name="fragment">The fragment.</param>
         /// <param name="lineNumber">The line number of the first line of the fragment.</param>
         /// <param name="sourceFilePath">The path of the source file.</param>
         /// <returns>The number of lines that were extracted from the fragment.</returns>
         /// <exception cref="ArgumentNullException">The specified <paramref name="fragment"/> is <c>null</c>.</exception>
-        internal int AppendFragment(string fragment, int lineNumber, string sourceFilePath)
+        public int AppendScriptFragment(string fragment, int lineNumber, string sourceFilePath)
         {
             if (fragment == null)
             {
                 throw new ArgumentNullException("fragment");
+            }
+            else if (lineNumber < 0)
+            {
+                throw new ArgumentOutOfRangeException("lineNumber");
             }
 
             if (IncludeSourceFileReferences && !GetIsLocalPath(sourceFilePath))
@@ -176,14 +193,14 @@ namespace Subspace.TextTemplating.ScriptBuilding
             {
                 if (IncludeSourceFileReferences && lines[i].Length > 0)
                 {
-                    WriteSourceFileReference(sourceFilePath, lineNumber);
+                    AppendSourceFileReference(sourceFilePath, lineNumber);
                 }
 
-                Append(lines[i]);
+                Script.Append(lines[i]);
 
                 if (i < lines.Length - 1)
                 {
-                    Append("\n");
+                    Script.Append("\n");
                 }
 
                 lineNumber++;
@@ -193,31 +210,34 @@ namespace Subspace.TextTemplating.ScriptBuilding
         }
 
         /// <summary>
-        ///     Gets the script string builder.
+        ///     Returns a <see cref="System.String"/> that represents this instance.
         /// </summary>
-        protected StringBuilder Script
+        /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
+        public override string ToString()
         {
-            get;
-            private set;
-        }
-
-        /// <summary>
-        ///     Gets a value indicating whether this instance has a main method script.
-        /// </summary>
-        protected bool HasMainMethodScript
-        {
-            get
+            if (!InnerScriptBuilder.IsEmpty)
             {
-                return _mainMethodScript != null;
-            }
-        }
+                string script = this.Script.ToString();
+                this.Script.Clear();
 
-        /// <summary>
-        ///     Writes a source file reference.
-        /// </summary>
-        /// <param name="sourceFilePath">The source file path.</param>
-        /// <param name="lineNumber">The line number.</param>
-        protected abstract void WriteSourceFileReference(string sourceFilePath, int lineNumber);
+                foreach (NamespaceReference namespaceReference in NamespaceReferences)
+                {
+                    AppendNamespaceReference(namespaceReference);
+                }
+
+                AppendNamespaceDeclaration(namespaceName);
+                AppendClassDefinition(className);
+                AppendLine(script);
+                AppendMainMethod(MainMethodName);
+
+                while (ScriptNestingStack.Count > 0)
+                {
+                    AppendNestingTerminator(ScriptNestingStack.Pop());
+                }
+            }
+
+            return Script.ToString();
+        }
 
         /// <summary>
         ///     Returns the source file path that matches the specified GUID.
@@ -226,9 +246,9 @@ namespace Subspace.TextTemplating.ScriptBuilding
         /// <returns>The source file path.</returns>
         /// <remarks>
         ///     This method is intended to resolve GUIDs that are found in the
-        ///     <see cref="CompilerError.FileName"/> property.
+        ///     <see cref="System.CodeDom.Compiler.CompilerError.FileName"/> property.
         /// </remarks>
-        internal string GetSourceFilePath(Guid guid)
+        public string GetSourceFilePath(Guid guid)
         {
             lock (sourceFilePathsLock)
             {
@@ -237,10 +257,100 @@ namespace Subspace.TextTemplating.ScriptBuilding
         }
 
         /// <summary>
-        ///     Returns the composed script.
+        ///     Returns the specified text as a remark.
         /// </summary>
-        /// <returns>The script.</returns>
-        internal abstract string ComposeScript();
+        /// <param name="text">The text.</param>
+        /// <returns>The remark.</returns>
+        public abstract string GetAsRemark(string text);
+
+        /// <summary>
+        ///     Appends the private property declaration.
+        /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="typeName">The name of the type.</param>
+        public abstract void AppendPrivatePropertyDeclaration(string propertyName, string typeName);
+
+        /// <summary>
+        ///     Appends the initialization method script.
+        /// </summary>
+        /// <param name="contextTypeName">The name of the context type.</param>
+        public abstract void AppendInitializationMethodScript(string contextTypeName);
+
+        /// <summary>
+        ///     Appends the script that appends the specified parameters.
+        /// </summary>
+        /// <param name="scriptParameters">The script parameters.</param>
+        public abstract void AppendParametersScript(List<ScriptParameter> scriptParameters);
+
+        /// <summary>
+        ///     Appends the output write script that writes the specified text.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        public abstract void AppendOutputWriteScript(string text);
+
+        /// <summary>
+        ///     Appends the output write script that writes the specified text.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="lineNumber">The line number.</param>
+        /// <param name="sourceFilePath">The source file path.</param>
+        public abstract void AppendOutputWriteScript(string text, int lineNumber, string sourceFilePath);
+
+        /// <summary>
+        ///     Appends the output write script that writes an empty line.
+        /// </summary>
+        public abstract void AppendOutputWriteLineScript();
+
+        /// <summary>
+        ///     Appends the output write script that writes the specified text as a line.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="lineNumber">The line number.</param>
+        /// <param name="sourceFilePath">The source file path.</param>
+        public abstract void AppendOutputWriteLineScript(string text, int lineNumber, string sourceFilePath);
+
+        /// <summary>
+        ///     Appends the output write script that writes the specified literal text as a line.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        public abstract void AppendOutputWriteLineScriptLiteral(string text);
+
+        /// <summary>
+        ///     Appends a source file reference.
+        /// </summary>
+        /// <param name="sourceFilePath">The source file path.</param>
+        /// <param name="lineNumber">The line number.</param>
+        protected abstract void AppendSourceFileReference(string sourceFilePath, int lineNumber);
+
+        /// <summary>
+        ///     Appends the specified namespace reference.
+        /// </summary>
+        /// <param name="namespaceReference">The namespace reference.</param>
+        protected abstract void AppendNamespaceReference(NamespaceReference namespaceReference);
+
+        /// <summary>
+        ///     Appends the namespace declaration.
+        /// </summary>
+        /// <param name="namespaceName">The name of the namespace.</param>
+        protected abstract void AppendNamespaceDeclaration(string namespaceName);
+
+        /// <summary>
+        ///     Appends the class definition.
+        /// </summary>
+        /// <param name="className">The class name.</param>
+        protected abstract void AppendClassDefinition(string className);
+
+        /// <summary>
+        ///     Appends the main method.
+        /// </summary>
+        /// <param name="mainMethodName">The name of the main method.</param>
+        protected abstract void AppendMainMethod(string mainMethodName);
+
+        /// <summary>
+        ///     Appends a nesting terminator.
+        /// </summary>
+        /// <param name="tag">The nesting tag.</param>
+        protected abstract void AppendNestingTerminator(string tag);
 
         /// <summary>
         ///     Returns a value indicating whether the specified path is a local path.
@@ -249,6 +359,7 @@ namespace Subspace.TextTemplating.ScriptBuilding
         /// <returns><c>true</c>, if the path is local;<c>false</c>, otherwise.</returns>
         private bool GetIsLocalPath(string path)
         {
+            //TODO: implement
             return true;
         }
     }

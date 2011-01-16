@@ -46,20 +46,21 @@ namespace Subspace.TextTemplating
     ///         </list>
     ///     </para>
     /// </remarks>
-    public sealed class TextTemplateTransformer
+    public sealed class TextTemplateTransformer : IInlineTransformer
     {
         private object context;
         private string baseDirectory;
         private string scriptDirectory;
-        private List<string> additionalReferences = new List<string>();
         private string inputText;
-        private string sourceFilePath;
+        private List<string> additionalReferences = new List<string>();
         private ScriptLanguage scriptLanguage = ScriptLanguage.CSharp;
         private string scriptLanguageVersion = "v4.0";
 
-        private ScriptBuilder documentScript;
-        private List<string> scriptParameters = new List<string>();
+        private IOuterScriptBuilder scriptBuilder;
+        private List<ScriptParameter> scriptParameters = new List<ScriptParameter>();
         private object[] parameterValues = new object[0];
+        private string contextTypeName;
+        private string contextNamespace;
 
         private static object regexLock;
         private static Regex remarksRegex;
@@ -153,8 +154,6 @@ namespace Subspace.TextTemplating
             }
 
             Type contextType;
-            string contextTypeName = null;
-            string contextNamespace = null;
 
             if (context != null)
             {
@@ -174,6 +173,11 @@ namespace Subspace.TextTemplating
                 contextNamespace = contextType.Namespace;
             }
 
+            if (contextTypeName == null)
+            {
+                contextTypeName = "object";
+            }
+
             this.baseDirectory = baseDirectory;
 
             if (additionalReferences != null)
@@ -181,40 +185,24 @@ namespace Subspace.TextTemplating
                 this.additionalReferences = additionalReferences.ToList();
             }
 
-            documentScript = ScriptBuilderFactory.Create(scriptLanguage, Constants.NamespaceName, Constants.ClassName);
+            scriptBuilder = ScriptBuilderFactory.Create(scriptLanguage, Constants.NamespaceName, Constants.ClassName);
 
-            if (context != null)
+            if (context != null && contextNamespace != null)
             {
-                if (contextNamespace != null)
-                {
-                    documentScript.NamespaceReferences.Add(new NamespaceReference(contextNamespace));
-                    this.additionalReferences.Add(context.GetType().Assembly.Location);
-                }
+                scriptBuilder.NamespaceReferences.Add(new NamespaceReference(contextNamespace));
+                this.additionalReferences.Add(context.GetType().Assembly.Location);
             }
 
-            if (contextTypeName == null)
-            {
-                contextTypeName = "object";
-            }
+            scriptBuilder.AppendPrivatePropertyDeclaration(Constants.ContextPropertyName, contextTypeName);
+            scriptBuilder.AppendLine();
 
-            documentScript.AppendFormat("private {0} Context;", contextTypeName);
-            documentScript.AppendLine();
+            scriptBuilder.AppendPrivatePropertyDeclaration(Constants.OutputPropertyName, typeof(TextTemplateOutputWriter).Name);
+            scriptBuilder.AppendLine();
 
-            documentScript.AppendFormat("private {0} Output;", typeof(TextTemplateOutputWriter).Name);
-            documentScript.AppendLine();
+            scriptBuilder.AppendPrivatePropertyDeclaration(Constants.TransformerPropertyName, typeof(IInlineTransformer).Name);
+            scriptBuilder.AppendLine();
 
-            StringBuilder format = new StringBuilder();
-            format.AppendLine("public void {0}(ref {1} output, {2} context)");
-            format.AppendLine("{{");
-            format.AppendLine("   Context = context;");
-            format.AppendLine("   Output = output;");
-            format.AppendLine("}}");
-
-            documentScript.AppendFormat(
-                format.ToString(),
-                Constants.InitializationMethodName,
-                typeof(TextTemplateOutputWriter).Name,
-                contextTypeName);
+            scriptBuilder.AppendInitializationMethodScript(contextTypeName);
         }
 
         /// <summary>
@@ -245,8 +233,21 @@ namespace Subspace.TextTemplating
         ///     Transforms the specified text file and returns the result.
         /// </summary>
         /// <param name="path">The path of the text file.</param>
+        /// <returns>The result of the transformation.</returns>
         /// <exception cref="ArgumentNullException">The specified path is <c>null</c>.</exception>
         public string TransformFile(string path)
+        {
+            return TransformFile(path, new object[0]);
+        }
+
+        /// <summary>
+        ///     Transforms the specified text file and returns the result.
+        /// </summary>
+        /// <param name="path">The path of the text file.</param>
+        /// <param name="parameters">The parameter values.</param>
+        /// <returns>The result of the transformation.</returns>
+        /// <exception cref="ArgumentNullException">The specified path is <c>null</c>.</exception>
+        public string TransformFile(string path, params object[] parameters)
         {
             if (path == null)
             {
@@ -255,7 +256,7 @@ namespace Subspace.TextTemplating
 
             scriptDirectory = Path.Combine(baseDirectory, Path.GetDirectoryName(path));
 
-            return TransformText(File.ReadAllText(path), path);
+            return TransformText(File.ReadAllText(path), path, parameters);
         }
 
         /// <summary>
@@ -263,12 +264,51 @@ namespace Subspace.TextTemplating
         /// </summary>
         /// <param name="text">The text to transform.</param>
         /// <param name="sourcePath">The path of the source file.</param>
+        /// <returns>The result of the transformation.</returns>
         /// <exception cref="ArgumentNullException">The specified <paramref name="text"/> is <c>null</c>.</exception>
         public string TransformText(string text, string sourcePath)
         {
+            return TransformText(text, sourcePath, new object[0]);
+        }
+
+        /// <summary>
+        ///     Transforms the specified text and returns the result.
+        /// </summary>
+        /// <param name="text">The text to transform.</param>
+        /// <param name="sourcePath">The path of the source file.</param>
+        /// <param name="parameterValues">The parameter values.</param>
+        /// <returns>The result of the transformation.</returns>
+        /// <exception cref="ArgumentNullException">The specified <paramref name="text"/> is <c>null</c>.</exception>
+        public string TransformText(string text, string sourcePath, params object[] parameterValues)
+        {
+            this.parameterValues = parameterValues;
+            scriptBuilder.IncludeSourceFileReferences = IncludeSourceFileReferences;
+
             Parse(text, sourcePath);
 
             return Execute(null);
+        }
+
+        /// <summary>
+        ///     Transforms the specified text file and returns the result.
+        /// </summary>
+        /// <param name="relativePath">The relative path.</param>
+        /// <param name="parameterValues">The parameter values.</param>
+        /// <returns>The result of the transformation.</returns>
+        public string TransformRelativeFile(string relativePath, params object[] parameterValues)
+        {
+            if (relativePath == null)
+            {
+                throw new ArgumentNullException("relativePath");
+            }
+            else if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                throw new ArgumentException(InternalExceptionStrings.ArgumentException_EmptyOrWhitespaceString, "relativePath");
+            }
+
+            TextTemplateTransformer transformer = new TextTemplateTransformer();
+
+            return transformer.TransformFile(Path.Combine(scriptDirectory, relativePath), parameterValues);
         }
 
         /// <summary>
@@ -284,9 +324,7 @@ namespace Subspace.TextTemplating
                 throw new ArgumentNullException("text");
             }
 
-            // Store the specified arguments for later use in the Execute method.
             inputText = text;
-            this.sourceFilePath = sourceFilePath;
 
             lock (regexLock)
             {
@@ -327,8 +365,8 @@ namespace Subspace.TextTemplating
                 }
 
                 inputText = string.Join("", lines.Select((n, idx) =>
-                    ((n.TrimStart().StartsWith(Constants.ScriptStartMarker)
-                    && !n.TrimStart().StartsWith(Constants.ScriptStartMarker + Constants.ScriptAutoWriteMarker)
+                    ((n.TrimStart().StartsWith(Constants.ScriptStartMarker, StringComparison.Ordinal)
+                    && !n.TrimStart().StartsWith(Constants.ScriptStartMarker + Constants.ScriptAutoWriteMarker, StringComparison.Ordinal)
                     && n.TrimEnd().EndsWith(Constants.ScriptEndMarker))
                     || idx == lines.Length - 1)
                     ? n : n + "\r\n"));
@@ -350,12 +388,11 @@ namespace Subspace.TextTemplating
                 // Parse all fragments.
                 int index = 0;
                 string[] fragments = scriptsRegex.Split(inputText);
-                MatchCollection matches = scriptsRegex.Matches(inputText);
-
+                
                 foreach (string fragment in fragments)
                 {
-                    if (!fragment.Equals(Constants.ScriptStartMarker, StringComparison.InvariantCultureIgnoreCase)
-                        && !fragment.Equals(Constants.ScriptEndMarker, StringComparison.InvariantCultureIgnoreCase))
+                    if (!fragment.Equals(Constants.ScriptStartMarker, StringComparison.Ordinal)
+                        && !fragment.Equals(Constants.ScriptEndMarker, StringComparison.Ordinal))
                     {
                         ParseFragment(
                             fragment,
@@ -375,17 +412,16 @@ namespace Subspace.TextTemplating
         /// <returns>The resulting document.</returns>
         private string Execute(string outputPath)
         {
-            documentScript.Append(GetAppendParametersScript(scriptParameters));
-            documentScript.IncludeSourceFileReferences = IncludeSourceFileReferences;
+            scriptBuilder.AppendParametersScript(scriptParameters);
 
-            string script = documentScript.ComposeScript();
+            string script = scriptBuilder.ToString();
 
             if (!string.IsNullOrEmpty(outputPath))
             {
                 WriteScript(script, outputPath);
             }
 
-            CompilerResults results = CompileScript(script, scriptLanguage);
+            CompilerResults results = CompileScript(script);
 
             foreach (CompilerError error in results.Errors.Cast<CompilerError>().OrderBy(n => n.Line))
             {
@@ -415,12 +451,12 @@ namespace Subspace.TextTemplating
             // Call the intialization method.
             classType = assembly.GetType(Constants.NamespaceName + "." + Constants.ClassName);
             initMethod = classType.GetMethod(Constants.InitializationMethodName);
-            initMethod.Invoke(documentScriptsInstance, new[] { outputWriter, context });
+            initMethod.Invoke(documentScriptsInstance, new[] { outputWriter, context, this });
 
             // Execute the main method.
             outputWriter.StartCapture();
 
-            MethodInfo mainMethod = classType.GetMethod(ScriptBuilder.MainMethodName);
+            MethodInfo mainMethod = classType.GetMethod(scriptBuilder.MainMethodName);
             mainMethod.Invoke(documentScriptsInstance, new object[] { });
 
             return outputWriter.EndCapture();
@@ -441,41 +477,41 @@ namespace Subspace.TextTemplating
             {
                 return;
             }
-            else if (!fragment.StartsWith(startMarker))
+            else if (!fragment.StartsWith(startMarker, StringComparison.Ordinal))
             {
                 fragmentType = FragmentType.Markup;
             }
             // Determine whether the script should automatically write the result to the output.
-            else if (fragment.StartsWith(startMarker + Constants.ScriptAutoWriteMarker))
+            else if (fragment.StartsWith(startMarker + Constants.ScriptAutoWriteMarker, StringComparison.Ordinal))
             {
                 startMarker += Constants.ScriptAutoWriteMarker;
                 fragmentType = FragmentType.AutoWriteScript;
             }
             // Determine whether the script is a function definition.
-            else if (fragment.StartsWith(startMarker + Constants.ScriptClassBodyMarker))
+            else if (fragment.StartsWith(startMarker + Constants.ScriptClassBodyMarker, StringComparison.Ordinal))
             {
                 startMarker += Constants.ScriptClassBodyMarker;
                 fragmentType = FragmentType.ClassBody;
             }
             // Determine whether the script is an include statement.
-            else if (fragment.StartsWith(startMarker + Constants.ScriptIncludeMarker))
+            else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.ScriptIncludeMarker, StringComparison.Ordinal))
             {
-                startMarker += Constants.ScriptIncludeMarker;
+                startMarker += Constants.DirectiveMarker + Constants.ScriptIncludeMarker;
                 fragmentType = FragmentType.Include;
             }
             // Determine whether the script is a namespace import statement.
-            else if (fragment.StartsWith(startMarker + Constants.TemplateMarker))
+            else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.TemplateMarker, StringComparison.Ordinal))
             {
-                startMarker += Constants.TemplateMarker;
+                startMarker += Constants.DirectiveMarker + Constants.TemplateMarker;
                 fragmentType = FragmentType.Template;
             }
             // Determine whether the script is a namespace import statement.
-            else if (fragment.StartsWith(startMarker + Constants.NamespaceImportMarker))
+            else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.NamespaceImportMarker, StringComparison.Ordinal))
             {
-                startMarker += Constants.NamespaceImportMarker;
+                startMarker += Constants.DirectiveMarker + Constants.NamespaceImportMarker;
                 fragmentType = FragmentType.NamespaceImport;
             }
-            else if (fragment.StartsWith(startMarker + Constants.ScriptParameterMarker))
+            else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.ScriptParameterMarker, StringComparison.Ordinal))
             {
                 startMarker += Constants.ScriptParameterMarker;
                 fragmentType = FragmentType.ScriptParameter;
@@ -504,7 +540,7 @@ namespace Subspace.TextTemplating
             }
             else if (fragmentType == FragmentType.ClassBody)
             {
-                documentScript.AppendFragment(fragment, lineNumber, sourceFilePath);
+                scriptBuilder.AppendScriptFragment(fragment, lineNumber, sourceFilePath);
             }
             else if (fragmentType == FragmentType.Template)
             {
@@ -524,38 +560,8 @@ namespace Subspace.TextTemplating
             }
             else if (fragmentType == FragmentType.Markup)
             {
-                fragment = ParseMarkup(fragment);
+                ParseMarkup(fragment);
             }
-        }
-
-        /// <summary>
-        ///     Parses the script from the specified fragment.
-        /// </summary>
-        /// <param name="fragment">The fragment.</param>
-        /// <param name="lineNumber">The line number.</param>
-        /// <param name="sourceFilePath">The source file path.</param>
-        private void ParseScript(string fragment, int lineNumber, string sourceFilePath)
-        {
-            documentScript.MainMethodScript.AppendFragment(fragment, lineNumber, sourceFilePath);
-        }
-
-        /// <summary>
-        ///     Parses the auto write script from the specified fragment.
-        /// </summary>
-        /// <param name="fragment">The fragment.</param>
-        /// <param name="lineNumber">The line number.</param>
-        /// <param name="sourceFilePath">The source file path.</param>
-        private void ParseAutoWriteScript(string fragment, int lineNumber, string sourceFilePath)
-        {
-            documentScript.MainMethodScript.AppendFragment(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "Output.Write({0});",
-                    fragment),
-                lineNumber,
-                sourceFilePath);
-
-            documentScript.MainMethodScript.AppendLine();
         }
 
         /// <summary>
@@ -564,9 +570,9 @@ namespace Subspace.TextTemplating
         /// <param name="fragment">The fragment.</param>
         private void ParseTemplateDirective(string fragment)
         {
-            string language = ExtractDirectiveAttribute(fragment, "language") ?? "";
+            string language = ExtractDirectiveAttribute(fragment, Constants.LanguageAttributeName) ?? "";
 
-            if (language.StartsWith("C#"))
+            if (language.StartsWith(Constants.CSharpLanguageIdentifier, StringComparison.Ordinal))
             {
                 scriptLanguage = ScriptLanguage.CSharp;
 
@@ -575,7 +581,7 @@ namespace Subspace.TextTemplating
                     scriptLanguageVersion = language.Substring(2);
                 }
             }
-            else if (language.StartsWith("VB"))
+            else if (language.StartsWith(Constants.VisualBasicLanguageIdentifier, StringComparison.Ordinal))
             {
                 scriptLanguage = ScriptLanguage.VisualBasic;
 
@@ -596,7 +602,7 @@ namespace Subspace.TextTemplating
         /// <param name="fragment">The fragment.</param>
         private void ParseIncludeDirective(string fragment)
         {
-            string path = ExtractDirectiveAttribute(fragment, "file");
+            string path = ExtractDirectiveAttribute(fragment, Constants.FileAttributeName);
             path = Path.Combine(scriptDirectory, path.Trim(new char[] { '\'', '\"' }));
 
             ParseFragment(File.ReadAllText(path), 1, path);
@@ -608,8 +614,8 @@ namespace Subspace.TextTemplating
         /// <param name="fragment">The fragment.</param>
         private void ParseNamespaceDirective(string fragment)
         {
-            documentScript.NamespaceReferences.Add(
-                new NamespaceReference(ExtractDirectiveAttribute(fragment, "namespace")));
+            scriptBuilder.NamespaceReferences.Add(
+                new NamespaceReference(ExtractDirectiveAttribute(fragment, Constants.NamespaceAttributeName)));
         }
 
         /// <summary>
@@ -618,35 +624,52 @@ namespace Subspace.TextTemplating
         /// <param name="fragment">The fragment.</param>
         private void ParseScriptParameterDirective(string fragment)
         {
-            scriptParameters.Add(ExtractDirectiveAttribute(fragment, "name"));
+            scriptParameters.Add(
+                new ScriptParameter(
+                    ExtractDirectiveAttribute(fragment, Constants.NameAttributeName),
+                    ExtractDirectiveAttribute(fragment, Constants.TypeAttributeName)));
+        }
+
+        /// <summary>
+        ///     Parses the script from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        /// <param name="lineNumber">The line number.</param>
+        /// <param name="sourceFilePath">The source file path.</param>
+        private void ParseScript(string fragment, int lineNumber, string sourceFilePath)
+        {
+            scriptBuilder.InnerScriptBuilder.AppendScriptFragment(fragment, lineNumber, sourceFilePath);
+        }
+
+        /// <summary>
+        ///     Parses the auto write script from the specified fragment.
+        /// </summary>
+        /// <param name="fragment">The fragment.</param>
+        /// <param name="lineNumber">The line number.</param>
+        /// <param name="sourceFilePath">The source file path.</param>
+        private void ParseAutoWriteScript(string fragment, int lineNumber, string sourceFilePath)
+        {
+            scriptBuilder.InnerScriptBuilder.AppendOutputWriteLineScript(fragment, lineNumber, sourceFilePath);
         }
 
         /// <summary>
         ///     Parses the markup from the specified fragment.
         /// </summary>
         /// <param name="fragment">The fragment.</param>
-        /// <returns></returns>
-        private string ParseMarkup(string fragment)
+        private void ParseMarkup(string fragment)
         {
             while (fragment.StartsWith(Environment.NewLine, StringComparison.Ordinal))
             {
-                documentScript.MainMethodScript.AppendFormat(
-                    "Output.WriteLine();",
-                    fragment.Replace("\"", "\"\""));
+                scriptBuilder.InnerScriptBuilder.AppendOutputWriteLineScript();
+                scriptBuilder.InnerScriptBuilder.AppendLine();
 
-                documentScript.MainMethodScript.AppendLine();
                 fragment = fragment.Substring(Environment.NewLine.Length);
             }
 
             if (fragment.Length > 0)
             {
-                documentScript.MainMethodScript.AppendFormat(
-                    "Output.Write(@\"{0}\");",
-                    fragment.Replace("\"", "\"\""));
+                scriptBuilder.InnerScriptBuilder.AppendOutputWriteLineScriptLiteral(fragment);
             }
-
-            documentScript.MainMethodScript.AppendLine();
-            return fragment;
         }
 
         /// <summary>
@@ -689,22 +712,21 @@ namespace Subspace.TextTemplating
         /// </summary>
         /// <param name="script">The script.</param>
         /// <param name="path">The file path.</param>
-        private static void WriteScript(string script, string path)
+        private void WriteScript(string script, string path)
         {
-            string scriptDirectory = Path.GetDirectoryName(path);
+            string directory = Path.GetDirectoryName(path);
 
-            if (!Directory.Exists(scriptDirectory))
+            if (!Directory.Exists(directory))
             {
-                Directory.CreateDirectory(scriptDirectory);
+                Directory.CreateDirectory(directory);
             }
 
             StringBuilder output = new StringBuilder();
-            output.Append("// ");
-            output.AppendLine(new string('*', 94));
-            output.Append("// ");
-            output.AppendLine(Resources.FileGeneratedByTool);
-            output.Append("// ");
-            output.AppendLine(new string('*', 94));
+
+            output.AppendLine(scriptBuilder.GetAsRemark(new string('*', 94)));
+            output.AppendLine(scriptBuilder.GetAsRemark(Resources.FileGeneratedByTool));
+            output.AppendLine(scriptBuilder.GetAsRemark(new string('*', 94)));
+
             output.AppendLine();
             output.Append(script);
 
@@ -712,84 +734,24 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Returns the script that appends the parameters.
-        /// </summary>
-        /// <param name="scriptParameters">The script parameters.</param>
-        /// <returns>The script.</returns>
-        private static string GetAppendParametersScript(List<string> scriptParameters)
-        {
-            StringBuilder script = new StringBuilder();
-            StringBuilder parameterDefinitions = new StringBuilder();
-            StringBuilder parameterAssignments = new StringBuilder();
-
-            foreach (string scriptParameter in scriptParameters)
-            {
-                string[] parts = scriptParameter.Split(new char[] { ':' });
-                string name = parts[0].Trim();
-                string type = parts[1].Trim();
-
-                script.AppendLine(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "private {0} {1};",
-                        type,
-                        name));
-
-                if (parameterDefinitions.Length > 0)
-                {
-                    parameterDefinitions.Append(", ");
-                }
-
-                parameterDefinitions.AppendFormat(
-                    CultureInfo.InvariantCulture,
-                    "{0} _{1}",
-                    type,
-                    name);
-
-                parameterAssignments.AppendFormat(
-                    CultureInfo.InvariantCulture,
-                    "{0} = _{0}{1};",
-                    name,
-                    Environment.NewLine);
-            }
-
-            script.Append(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    @"
-                    public void {0}({1})
-                    {{
-                        {2}
-                    }}                    
-                    ",
-                    Constants.ParameterInitializationMethodName,
-                    parameterDefinitions.ToString(),
-                    parameterAssignments.ToString()));
-
-            script.AppendLine();
-
-            return script.ToString();
-        }
-
-        /// <summary>
         ///     Compiles the specified script.
         /// </summary>
         /// <param name="script">The script.</param>
-        /// <param name="scriptLanguage">The script language.</param>
         /// <returns>The compiler results.</returns>
-        private CompilerResults CompileScript(string script, ScriptLanguage scriptLanguage)
+        private CompilerResults CompileScript(string script)
         {
-            CodeDomProvider provider = CodeDomProviderFactory.Create(scriptLanguage, scriptLanguageVersion);
+            using (CodeDomProvider provider = CodeDomProviderFactory.Create(scriptLanguage, scriptLanguageVersion))
+            {
+                CompilerParameters compilerParameters = new CompilerParameters();
+                compilerParameters.GenerateExecutable = false;
+                compilerParameters.GenerateInMemory = true;
+                compilerParameters.ReferencedAssemblies.AddRange(GetAssemblyReferences());
+                compilerParameters.IncludeDebugInformation = DebugMode;
+                compilerParameters.WarningLevel = (DebugMode ? 3 : 1);
+                compilerParameters.CompilerOptions = (DebugMode ? "" : "/optimize");
 
-            CompilerParameters compilerParameters = new CompilerParameters();
-            compilerParameters.GenerateExecutable = false;
-            compilerParameters.GenerateInMemory = true;
-            compilerParameters.ReferencedAssemblies.AddRange(GetAssemblyReferences());
-            compilerParameters.IncludeDebugInformation = DebugMode;
-            compilerParameters.WarningLevel = (DebugMode ? 3 : 1);
-            compilerParameters.CompilerOptions = (DebugMode ? "" : "/optimize");
-
-            return provider.CompileAssemblyFromSource(compilerParameters, script);
+                return provider.CompileAssemblyFromSource(compilerParameters, script);
+            }
         }
 
         /// <summary>
@@ -833,7 +795,7 @@ namespace Subspace.TextTemplating
                 {
                     if (sourceFileGuid != Guid.Empty)
                     {
-                        filename = documentScript.GetSourceFilePath(sourceFileGuid);
+                        filename = scriptBuilder.GetSourceFilePath(sourceFileGuid);
                     }
                 }
             }

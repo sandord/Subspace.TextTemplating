@@ -7,25 +7,22 @@
     /// </summary>
     internal static class InternalExceptionStrings
     {
-        internal static readonly string ArgumentException_EmptyString =
-            "Empty string.";
-
-        internal static readonly string ArgumentException_EmptyOrWhitespaceString =
+        internal const string ArgumentException_EmptyOrWhitespaceString =
             "Empty string or a string consisting of only whitespace.";
 
-        internal static readonly string InvalidOperationException_NotCapturing =
+        internal const string InvalidOperationException_NotCapturing =
             "Not capturing.";
 
-        internal static readonly string ArgumentException_TypeIsSpecialName =
+        internal const string ArgumentException_TypeIsSpecialName =
             "Cannot accept the instance type because it is a special name.";
 
-        internal static readonly string ArgumentException_TypeIsNotPublic =
+        internal const string ArgumentException_TypeIsNotPublic =
             "Cannot accept the instance type because it is not public.";
 
-        internal static readonly string InvalidOperationException_UnrecognizedLanguageIdentifier =
+        internal const string InvalidOperationException_UnrecognizedLanguageIdentifier =
             "Unrecognized language identifier.";
 
-        internal static readonly string InvalidOperationException_UnsupportedLanguage =
+        internal const string InvalidOperationException_UnsupportedLanguage =
             "Unsupported language.";
     }
 }

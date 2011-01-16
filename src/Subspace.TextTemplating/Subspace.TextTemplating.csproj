@@ -22,6 +22,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\Subspace.TextTemplating.XML</DocumentationFile>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -44,8 +46,12 @@
   <ItemGroup>
     <Compile Include="CharacterRange.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="IInlineTransformer.cs" />
     <Compile Include="ScriptBuilding\CodeDomProviderFactory.cs" />
+    <Compile Include="ScriptBuilding\IInnerScriptBuilder.cs" />
+    <Compile Include="ScriptBuilding\IOuterScriptBuilder.cs" />
     <Compile Include="ScriptBuilding\ScriptBuilderFactory.cs" />
+    <Compile Include="ScriptBuilding\ScriptParameter.cs" />
     <Compile Include="ScriptBuilding\VisualBasicScriptBuilder.cs" />
     <Compile Include="ScriptBuilding\CSharpScriptBuilder.cs" />
     <Compile Include="FragmentType.cs" />

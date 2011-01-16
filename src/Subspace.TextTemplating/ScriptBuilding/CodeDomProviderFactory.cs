@@ -18,13 +18,17 @@ namespace Subspace.TextTemplating.ScriptBuilding
         ///     Creates a code DOM provider appropriate for the specified script language.
         /// </summary>
         /// <param name="scriptLanguage">The script language.</param>
-        /// <param name="scriptLanguageVersion">The script language version.</param>
+        /// <param name="compilerVersion">The compiler version.</param>
         /// <returns>A code DOM provider.</returns>
-        internal static CodeDomProvider Create(ScriptLanguage scriptLanguage, string scriptLanguageVersion)
+        public static CodeDomProvider Create(ScriptLanguage scriptLanguage, string compilerVersion)
         {
-            if (scriptLanguageVersion == null)
+            if (compilerVersion == null)
             {
-                throw new ArgumentNullException("scriptLanguageVersion");
+                throw new ArgumentNullException("compilerVersion");
+            }
+            else if (string.IsNullOrWhiteSpace(compilerVersion))
+            {
+                throw new ArgumentException(InternalExceptionStrings.ArgumentException_EmptyOrWhitespaceString, "compilerVersion");
             }
 
             CodeDomProvider instance;
@@ -32,7 +36,7 @@ namespace Subspace.TextTemplating.ScriptBuilding
             Dictionary<string, string> providerOptions =
                 new Dictionary<string, string>()
                     {
-                        { "CompilerVersion", scriptLanguageVersion }
+                        { "CompilerVersion", compilerVersion }
                     };
 
             if (scriptLanguage == ScriptLanguage.CSharp)
