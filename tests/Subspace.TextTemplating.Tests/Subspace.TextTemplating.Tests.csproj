@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TextTemplateTransformerNonT4Tests.cs" />
     <Compile Include="TextTemplateTransformerTests.cs" />
     <Compile Include="Templates\Includes\Include11.cs">
       <AutoGen>True</AutoGen>
@@ -76,6 +77,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Templates\NonT4Features\Template2.tt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\NonT4Features\Template1.tt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Templates\Includes\Include1.tt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Generator>TextTemplatingFilePreprocessor</Generator>

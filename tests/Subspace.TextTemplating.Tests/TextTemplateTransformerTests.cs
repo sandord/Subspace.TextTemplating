@@ -43,7 +43,6 @@ namespace Subspace.TextTemplating.Tests
             var expected = new Template2() { Context = context }.TransformText();
 
             // Act.
-
             string output = transformer.TransformFile(@"Templates\Template2.tt");
 
             // Assert.
@@ -58,7 +57,6 @@ namespace Subspace.TextTemplating.Tests
             var expected = new Template3().TransformText();
 
             // Act.
-
             string output = transformer.TransformFile(@"Templates\Template3.tt");
 
             // Assert.

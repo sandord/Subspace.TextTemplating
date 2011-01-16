@@ -1,0 +1,11 @@
+﻿<#@ template language="C#" #>
+<#@ parameter name="Parameter1" type="string" #>
+<html>
+<head>
+    <title>
+    </title>
+</head>
+<body>
+    Parameter 1 : <#= Parameter1 #>
+</body>
+</html>

@@ -1,0 +1,2 @@
+﻿<#@ template language="C#" #>
+<#= Transformer.TransformRelativeFile("Template1.tt", "passed-through-test-value") #>
