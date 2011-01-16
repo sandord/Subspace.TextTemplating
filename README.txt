@@ -4,6 +4,8 @@ Subspace.TextTemplating is a .NET text templating library. It has the following 
 * Supports runtime transformation as opposed to T4
 * Does not depend on Visual Studio as opposed to T4
 * Supports the Visual Studio debugger by providing references to the template from the generated code
+* Supports template parameters, which make making instances available to text templatates easy
+* Supports dynamic parsing of templates from inline code, allowing for conditional template includes
 
 Some of the possible uses are:
 
