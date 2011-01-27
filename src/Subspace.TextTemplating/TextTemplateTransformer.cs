@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -65,6 +66,9 @@ namespace Subspace.TextTemplating
         private static object regexLock;
         private static Regex remarksRegex;
         private static Regex scriptsRegex;
+
+        private static readonly object assemblyCacheLock = new object();
+        private static Dictionary<string, Assembly> assemblyCache;
 
         /// <summary>
         ///     Gets or sets a value indicating whether debug mode is enabled.
@@ -227,6 +231,8 @@ namespace Subspace.TextTemplating
                 RegexOptions.Multiline);
 
             regexLock = new object();
+
+            assemblyCache = new Dictionary<string, Assembly>();
         }
 
         /// <summary>
@@ -388,7 +394,7 @@ namespace Subspace.TextTemplating
                 // Parse all fragments.
                 int index = 0;
                 string[] fragments = scriptsRegex.Split(inputText);
-                
+
                 foreach (string fragment in fragments)
                 {
                     if (!fragment.Equals(Constants.ScriptStartMarker, StringComparison.Ordinal)
@@ -421,45 +427,73 @@ namespace Subspace.TextTemplating
                 WriteScript(script, outputPath);
             }
 
-            CompilerResults results = CompileScript(script);
+            Assembly assembly;
+            string cacheKey = GetHashCode(script);
 
-            foreach (CompilerError error in results.Errors.Cast<CompilerError>().OrderBy(n => n.Line))
+            lock (assemblyCacheLock)
             {
-                TextTemplateFileSourceReference sourceReference = new TextTemplateFileSourceReference()
+                if (!assemblyCache.ContainsKey(cacheKey))
                 {
-                    Path = GetSourceFilePath(error.FileName),
-                    Line = error.Line
-                };
+                    CompilerResults results = CompileScript(script);
 
-                if (!error.IsWarning)
-                {
-                    TextTemplateFileException templateFileException = new TextTemplateFileException(GetCompilerErrorMessage(error), sourceReference);
+                    foreach (CompilerError error in results.Errors.Cast<CompilerError>().OrderBy(n => n.Line))
+                    {
+                        TextTemplateFileSourceReference sourceReference = new TextTemplateFileSourceReference()
+                        {
+                            Path = GetSourceFilePath(error.FileName),
+                            Line = error.Line
+                        };
 
-                    throw templateFileException;
+                        if (!error.IsWarning)
+                        {
+                            TextTemplateFileException templateFileException = new TextTemplateFileException(GetCompilerErrorMessage(error), sourceReference);
+
+                            throw templateFileException;
+                        }
+                    }
+
+                    assembly = results.CompiledAssembly;
+                    assemblyCache[cacheKey] = assembly;
                 }
+                else
+                {
+                    assembly = assemblyCache[cacheKey];
+                }
+
+                TextTemplateOutputWriter outputWriter = new TextTemplateOutputWriter();
+                object documentScriptsInstance = assembly.CreateInstance(Constants.NamespaceName + "." + Constants.ClassName);
+
+                // Call the property intialization method.
+                Type classType = assembly.GetType(Constants.NamespaceName + "." + Constants.ClassName);
+                MethodInfo initMethod = classType.GetMethod(Constants.PropertyInitializationMethodName);
+                initMethod.Invoke(documentScriptsInstance, propertyValues);
+
+                // Call the intialization method.
+                classType = assembly.GetType(Constants.NamespaceName + "." + Constants.ClassName);
+                initMethod = classType.GetMethod(Constants.InitializationMethodName);
+                initMethod.Invoke(documentScriptsInstance, new[] { outputWriter, context, this });
+
+                // Execute the main method.
+                outputWriter.StartCapture();
+
+                MethodInfo mainMethod = classType.GetMethod(scriptBuilder.MainMethodName);
+                mainMethod.Invoke(documentScriptsInstance, new object[] { });
+
+                return outputWriter.EndCapture();
             }
+        }
 
-            Assembly assembly = results.CompiledAssembly;
-            TextTemplateOutputWriter outputWriter = new TextTemplateOutputWriter();
-            object documentScriptsInstance = assembly.CreateInstance(Constants.NamespaceName + "." + Constants.ClassName);
-
-            // Call the property intialization method.
-            Type classType = assembly.GetType(Constants.NamespaceName + "." + Constants.ClassName);
-            MethodInfo initMethod = classType.GetMethod(Constants.PropertyInitializationMethodName);
-            initMethod.Invoke(documentScriptsInstance, propertyValues);
-
-            // Call the intialization method.
-            classType = assembly.GetType(Constants.NamespaceName + "." + Constants.ClassName);
-            initMethod = classType.GetMethod(Constants.InitializationMethodName);
-            initMethod.Invoke(documentScriptsInstance, new[] { outputWriter, context, this });
-
-            // Execute the main method.
-            outputWriter.StartCapture();
-
-            MethodInfo mainMethod = classType.GetMethod(scriptBuilder.MainMethodName);
-            mainMethod.Invoke(documentScriptsInstance, new object[] { });
-
-            return outputWriter.EndCapture();
+        /// <summary>
+        ///     Returns the hash code for the specified text.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <returns>The hash code.</returns>
+        private static string GetHashCode(string text)
+        {
+            byte[] buffer = UTF8Encoding.Default.GetBytes(text);
+            SHA1CryptoServiceProvider cryptoTransformSHA1 = new SHA1CryptoServiceProvider();
+            
+            return BitConverter.ToString(cryptoTransformSHA1.ComputeHash(buffer));
         }
 
         /// <summary>
