@@ -175,7 +175,7 @@ namespace Subspace.TextTemplating
 
             if (contextTypeName == null)
             {
-                contextTypeName = "object";
+                contextTypeName = typeof(object).FullName;
             }
 
             this.baseDirectory = baseDirectory;
