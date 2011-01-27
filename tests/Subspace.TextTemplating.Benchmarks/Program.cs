@@ -12,7 +12,7 @@ namespace Subspace.TextTemplating.Benchmarks
         {
             Stopwatch stopwatch = new Stopwatch();
 
-            int count = 100;
+            int count = 1000;
             Console.WriteLine(string.Format("Transforming {0} templates", count));
 
             stopwatch.Start();
