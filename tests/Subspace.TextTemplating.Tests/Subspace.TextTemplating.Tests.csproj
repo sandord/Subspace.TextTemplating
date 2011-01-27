@@ -77,10 +77,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Templates\NonT4Features\Template2.tt">
+    <None Include="Templates\NonT4Features\Template2.stt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="Templates\NonT4Features\Template1.tt">
+    <None Include="Templates\NonT4Features\Template1.stt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Templates\Includes\Include1.tt">

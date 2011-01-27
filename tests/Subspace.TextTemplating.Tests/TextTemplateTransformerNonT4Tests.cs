@@ -25,7 +25,7 @@ namespace Subspace.TextTemplating.Tests
             var expected = "<html>\r\n<head>\r\n    <title>\r\n    </title>\r\n</head>\r\n<body>\r\n    Property 1 : " + propertyValue + "\r\n</body>\r\n</html>\r\n";
 
             // Act.
-            string output = transformer.TransformFile(@"Templates\NonT4Features\Template1.tt", propertyValue);
+            string output = transformer.TransformFile(@"Templates\NonT4Features\Template1.stt", propertyValue);
 
             // Assert.
             Assert.AreEqual(expected, output);
@@ -39,7 +39,7 @@ namespace Subspace.TextTemplating.Tests
             var expected = "<html>\r\n<head>\r\n    <title>\r\n    </title>\r\n</head>\r\n<body>\r\n    Property 1 : passed-through-test-value\r\n</body>\r\n</html>\r\n";
 
             // Act.
-            string output = transformer.TransformFile(@"Templates\NonT4Features\Template2.tt");
+            string output = transformer.TransformFile(@"Templates\NonT4Features\Template2.stt");
 
             // Assert.
             Assert.AreEqual(expected, output);
