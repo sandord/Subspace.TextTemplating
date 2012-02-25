@@ -1,15 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="VisualBasicScriptBuilder.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.ScriptBuilding
 {
+    using System;
+    using System.Collections.Generic;
+
     /// <summary>
     ///     Provides a means of building a Visual Basic script that is suitable for execution.
     /// </summary>
     internal sealed class VisualBasicScriptBuilder : ScriptBuilder
     {
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="VisualBasicScriptBuilder"/> class.
+        /// </summary>
+        /// <param name="namespaceName">The namespace name.</param>
+        /// <param name="className">The class name.</param>
+        internal VisualBasicScriptBuilder(string namespaceName, string className)
+            : base(namespaceName, className)
+        {
+        }
+
         /// <summary>
         ///     Gets the script language.
         /// </summary>
@@ -19,16 +33,6 @@ namespace Subspace.TextTemplating.ScriptBuilding
             {
                 return ScriptLanguage.VisualBasic;
             }
-        }
-        
-        /// <summary>
-        ///     Initializes a new instance of the <see cref="VisualBasicScriptBuilder"/> class.
-        /// </summary>
-        /// <param name="namespaceName">The namespace name.</param>
-        /// <param name="className">The class name.</param>
-        internal VisualBasicScriptBuilder(string namespaceName, string className)
-            : base(namespaceName, className)
-        {
         }
 
         /// <summary>

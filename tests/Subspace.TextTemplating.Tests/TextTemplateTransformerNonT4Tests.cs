@@ -1,18 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-
-using NUnit.Framework;
-
-using Subspace.TextTemplating;
-
-using Subspace.TextTemplating.Tests.TestObjects;
-using Subspace.TextTemplating.Tests.Templates;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="TextTemplateTransformerNonT4Tests.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.Tests
 {
+    using NUnit.Framework;
+
+    using Subspace.TextTemplating;
+
     [TestFixture]
     public class TextTemplateTransformerNonT4Tests
     {

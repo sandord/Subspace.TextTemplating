@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="IInnerScriptBuilder.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.ScriptBuilding
 {
+    using System;
+
     /// <summary>
     ///     Defines the public members of a class that provides means of building an inner script,
     ///     which is a script that builds the actual output of a text template.

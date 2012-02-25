@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="NamespaceReference.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating
 {
@@ -11,21 +12,21 @@ namespace Subspace.TextTemplating
     internal sealed class NamespaceReference
     {
         /// <summary>
+        ///     Initializes a new instance of the <see cref="NamespaceReference"/> class.
+        /// </summary>
+        /// <param name="namespace">The namespace.</param>
+        public NamespaceReference(string @namespace)
+        {
+            this.Namespace = @namespace;
+        }
+
+        /// <summary>
         ///     Gets the namespace.
         /// </summary>
         public string Namespace
         {
             get;
             private set;
-        }
-
-        /// <summary>
-        ///     Initializes a new instance of the specified <see cref="NamespaceReference"/> class.
-        /// </summary>
-        /// <param name="namespace">The namespace.</param>
-        public NamespaceReference(string @namespace)
-        {
-            this.Namespace = @namespace;
         }
     }
 }

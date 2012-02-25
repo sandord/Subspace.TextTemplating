@@ -1,4 +1,8 @@
-using System;
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="Constants.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating
 {

@@ -9,10 +9,10 @@
 // ------------------------------------------------------------------------------
 namespace Subspace.TextTemplating.Tests.Templates.Includes
 {
-    using System;
-    
-    
-    #line 1 "C:\Users\Sandor\Documents\Visual Studio 2010\Projects\Subspace.TextTemplating\tests\Subspace.TextTemplating.Tests\Templates\Includes\Include1.tt"
+
+
+
+#line 1 "C:\Users\Sandor\Documents\Visual Studio 2010\Projects\Subspace.TextTemplating\tests\Subspace.TextTemplating.Tests\Templates\Includes\Include1.tt"
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "10.0.0.0")]
     public partial class Include1 : Include1Base
     {

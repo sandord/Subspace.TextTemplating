@@ -1,33 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="ScriptProperty.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.ScriptBuilding
 {
+    using System;
+
     /// <summary>
     ///     Describes a property for which a value can be passed into a script.
     /// </summary>
     internal class ScriptProperty
     {
-        /// <summary>
-        ///     Gets the name.
-        /// </summary>
-        public string Name
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
-        ///     Gets the name of the type.
-        /// </summary>
-        public string TypeName
-        {
-            get;
-            private set;
-        }
-
         /// <summary>
         ///     Initializes a new instance of the <see cref="ScriptProperty"/> class.
         /// </summary>
@@ -54,6 +39,24 @@ namespace Subspace.TextTemplating.ScriptBuilding
 
             this.Name = name;
             this.TypeName = typeName;
+        }
+
+        /// <summary>
+        ///     Gets the name.
+        /// </summary>
+        public string Name
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        ///     Gets the name of the type.
+        /// </summary>
+        public string TypeName
+        {
+            get;
+            private set;
         }
     }
 }

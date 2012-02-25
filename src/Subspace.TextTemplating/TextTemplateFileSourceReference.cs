@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="TextTemplateFileSourceReference.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating
 {
@@ -32,34 +33,7 @@ namespace Subspace.TextTemplating
             get;
             set;
         }
-
-        /// <summary>
-        ///     Determines whether the specified <see cref="System.Object"/> is equal to this
-        ///     instance.
-        /// </summary>
-        /// <param name="obj">The <see cref="System.Object"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.</returns>
-        public override bool Equals(object obj)
-        {
-            if (obj == null)
-            {
-                return false;
-            }
-
-            TextTemplateFileSourceReference instance = (TextTemplateFileSourceReference)obj;
-            
-            return Path == instance.Path && Line == instance.Line;
-        }
-
-        /// <summary>
-        ///     Returns a hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
-        public override int GetHashCode()
-        {
-            return Path.GetHashCode() ^ Line.GetHashCode();
-        }
-
+        
         /// <summary>
         ///     Implements the operator ==.
         /// </summary>
@@ -80,6 +54,33 @@ namespace Subspace.TextTemplating
         public static bool operator !=(TextTemplateFileSourceReference left, TextTemplateFileSourceReference right)
         {
             return !left.Equals(right);
+        }
+
+        /// <summary>
+        ///     Determines whether the specified <see cref="System.Object"/> is equal to this
+        ///     instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object"/> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+
+            TextTemplateFileSourceReference instance = (TextTemplateFileSourceReference)obj;
+
+            return Path == instance.Path && Line == instance.Line;
+        }
+
+        /// <summary>
+        ///     Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        public override int GetHashCode()
+        {
+            return Path.GetHashCode() ^ Line.GetHashCode();
         }
     }
 }

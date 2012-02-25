@@ -1,10 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="IOuterScriptBuilder.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.ScriptBuilding
 {
+    using System;
+    using System.Collections.Generic;
+
     /// <summary>
     ///     Defines the public members of a class that provides means of building an outer script,
     ///     which is a script that manages an inner script, which in turn represents a text
@@ -37,7 +41,7 @@ namespace Subspace.TextTemplating.ScriptBuilding
         }
 
         /// <summary>
-        ///     Gets or sets value indicating whether to include source file references in the
+        ///     Gets or sets a value indicating whether to include source file references in the
         ///     generated code.
         /// </summary>
         bool IncludeSourceFileReferences

@@ -1,19 +1,25 @@
-﻿using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using Microsoft.CSharp;
-using Microsoft.VisualBasic;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="CodeDomProviderFactory.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.ScriptBuilding
 {
+    using System;
+    using System.CodeDom.Compiler;
+    using System.Collections.Generic;
+
+    using Microsoft.CSharp;
+    using Microsoft.VisualBasic;
+
     /// <summary>
     ///     Creates code DOM provider instances.
     /// </summary>
     internal static class CodeDomProviderFactory
     {
+        private const string InvalidOperationException_UnsupportedLanguage = "Unsupported language.";
+
         /// <summary>
         ///     Creates a code DOM provider appropriate for the specified script language.
         /// </summary>
@@ -49,7 +55,7 @@ namespace Subspace.TextTemplating.ScriptBuilding
             }
             else
             {
-                throw new InvalidOperationException(InternalExceptionStrings.InvalidOperationException_UnsupportedLanguage);
+                throw new InvalidOperationException(InvalidOperationException_UnsupportedLanguage);
             }
 
             return instance;

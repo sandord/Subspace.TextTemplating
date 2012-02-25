@@ -1,15 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="ScriptBuilderFactory.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.ScriptBuilding
 {
+    using System;
+
     /// <summary>
     ///     Creates script builder instances.
     /// </summary>
     internal static class ScriptBuilderFactory
     {
+        private const string InvalidOperationException_UnrecognizedLanguageIdentifier = "Unrecognized language identifier.";
+
         /// <summary>
         ///     Creates a script builder appropriate for the specified script language.
         /// </summary>
@@ -48,7 +53,7 @@ namespace Subspace.TextTemplating.ScriptBuilding
             }
             else
             {
-                throw new InvalidOperationException(InternalExceptionStrings.InvalidOperationException_UnrecognizedLanguageIdentifier);
+                throw new InvalidOperationException(InvalidOperationException_UnrecognizedLanguageIdentifier);
             }
 
             return instance;

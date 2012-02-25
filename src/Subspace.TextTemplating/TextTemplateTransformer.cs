@@ -1,19 +1,25 @@
-using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-
-using Subspace.TextTemplating.Properties;
-using Subspace.TextTemplating.ScriptBuilding;
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="TextTemplateTransformer.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating
 {
+    using System;
+    using System.CodeDom.Compiler;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Security.Cryptography;
+    using System.Text;
+    using System.Text.RegularExpressions;
+
+    using Subspace.TextTemplating.Properties;
+    using Subspace.TextTemplating.ScriptBuilding;
+
     /// <summary>
     ///     Transforms text templates at runtime.
     /// </summary>
@@ -49,6 +55,16 @@ namespace Subspace.TextTemplating
     /// </remarks>
     public sealed class TextTemplateTransformer : IInlineTransformer
     {
+        private const string ArgumentException_TypeIsSpecialName = "Cannot accept the instance type because it is a special name.";
+        private const string ArgumentException_TypeIsNotPublic = "Cannot accept the instance type because it is not public.";
+        private const string InvalidOperationException_UnrecognizedLanguageIdentifier = "Unrecognized language identifier.";
+
+        private static readonly object assemblyCacheLock = new object();
+        private static object regexLock;
+        private static Regex remarksRegex;
+        private static Regex scriptsRegex;
+        private static Dictionary<string, Assembly> assemblyCache;
+
         private object context;
         private string baseDirectory;
         private string scriptDirectory;
@@ -63,30 +79,30 @@ namespace Subspace.TextTemplating
         private string contextTypeName;
         private string contextNamespace;
 
-        private static object regexLock;
-        private static Regex remarksRegex;
-        private static Regex scriptsRegex;
-
-        private static readonly object assemblyCacheLock = new object();
-        private static Dictionary<string, Assembly> assemblyCache;
-
         /// <summary>
-        ///     Gets or sets a value indicating whether debug mode is enabled.
+        ///     Initializes static members of the <see cref="TextTemplateTransformer"/> class.
         /// </summary>
-        public bool DebugMode
+        static TextTemplateTransformer()
         {
-            get;
-            set;
-        }
+            remarksRegex = new Regex(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    @"{0}--(?<1>)[\s\S]*?--{1}",
+                    Constants.ScriptStartMarker,
+                    Constants.ScriptEndMarker),
+                RegexOptions.Multiline);
 
-        /// <summary>
-        ///     Gets or sets a value indicating whether to include source file references in the
-        ///     generated code, to allow the Visual Studio debugger to locate the source file.
-        /// </summary>
-        public bool IncludeSourceFileReferences
-        {
-            get;
-            set;
+            scriptsRegex = new Regex(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    @"((?:{0})[\s\S]*?(?:{1}))",
+                    Constants.ScriptStartMarker,
+                    Constants.ScriptEndMarker),
+                RegexOptions.Multiline);
+
+            regexLock = new object();
+
+            assemblyCache = new Dictionary<string, Assembly>();
         }
 
         /// <summary>
@@ -165,11 +181,11 @@ namespace Subspace.TextTemplating
 
                 if (contextType.IsSpecialName)
                 {
-                    throw new ArgumentException(InternalExceptionStrings.ArgumentException_TypeIsSpecialName, "context");
+                    throw new ArgumentException(ArgumentException_TypeIsSpecialName, "context");
                 }
                 else if (contextType.IsNotPublic)
                 {
-                    throw new ArgumentException(InternalExceptionStrings.ArgumentException_TypeIsNotPublic, "context");
+                    throw new ArgumentException(ArgumentException_TypeIsNotPublic, "context");
                 }
 
                 this.context = context;
@@ -210,29 +226,22 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Initializes the <see cref="TextTemplateTransformer"/> class.
+        ///     Gets or sets a value indicating whether debug mode is enabled.
         /// </summary>
-        static TextTemplateTransformer()
+        public bool DebugMode
         {
-            remarksRegex = new Regex(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    @"{0}--(?<1>)[\s\S]*?--{1}",
-                    Constants.ScriptStartMarker,
-                    Constants.ScriptEndMarker),
-                RegexOptions.Multiline);
+            get;
+            set;
+        }
 
-            scriptsRegex = new Regex(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    @"((?:{0})[\s\S]*?(?:{1}))",
-                    Constants.ScriptStartMarker,
-                    Constants.ScriptEndMarker),
-                RegexOptions.Multiline);
-
-            regexLock = new object();
-
-            assemblyCache = new Dictionary<string, Assembly>();
+        /// <summary>
+        ///     Gets or sets a value indicating whether to include source file references in the
+        ///     generated code, to allow the Visual Studio debugger to locate the source file.
+        /// </summary>
+        public bool IncludeSourceFileReferences
+        {
+            get;
+            set;
         }
 
         /// <summary>
@@ -318,6 +327,37 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
+        ///     Returns the hash code for the specified text.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <returns>The hash code.</returns>
+        private static string GetHashCode(string text)
+        {
+            byte[] buffer = UTF8Encoding.Default.GetBytes(text);
+            SHA1CryptoServiceProvider cryptoTransformSHA1 = new SHA1CryptoServiceProvider();
+
+            return BitConverter.ToString(cryptoTransformSHA1.ComputeHash(buffer));
+        }
+
+        /// <summary>
+        ///     Extracts the value of the specified attribute from the specified text.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="attributeName">The name of the attribute.</param>
+        /// <returns>The extracted attribute value.</returns>
+        private static string ExtractDirectiveAttribute(string text, string attributeName)
+        {
+            Regex regex = new Regex(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    @"\b({0})\s*=\s*""(?<value>([^""])*)""",
+                    attributeName),
+                    RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+            return regex.Match(text).Groups["value"].Value;
+        }
+
+        /// <summary>
         ///     Parses any inline code within the specified <paramref name="text"/>.
         /// </summary>
         /// <param name="text">The text to parse.</param>
@@ -370,12 +410,14 @@ namespace Subspace.TextTemplating
                     }
                 }
 
-                inputText = string.Join("", lines.Select((n, idx) =>
-                    ((n.TrimStart().StartsWith(Constants.ScriptStartMarker, StringComparison.Ordinal)
-                    && !n.TrimStart().StartsWith(Constants.ScriptStartMarker + Constants.ScriptAutoWriteMarker, StringComparison.Ordinal)
-                    && n.TrimEnd().EndsWith(Constants.ScriptEndMarker))
-                    || idx == lines.Length - 1)
-                    ? n : n + "\r\n"));
+                inputText = string.Join(
+                    string.Empty,
+                    lines.Select((n, idx) =>
+                        ((n.TrimStart().StartsWith(Constants.ScriptStartMarker, StringComparison.Ordinal)
+                        && !n.TrimStart().StartsWith(Constants.ScriptStartMarker + Constants.ScriptAutoWriteMarker, StringComparison.Ordinal)
+                        && n.TrimEnd().EndsWith(Constants.ScriptEndMarker))
+                        || idx == lines.Length - 1)
+                        ? n : n + "\r\n"));
 
                 for (int i = 0; i < lines.Length; i++)
                 {
@@ -484,19 +526,6 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Returns the hash code for the specified text.
-        /// </summary>
-        /// <param name="text">The text.</param>
-        /// <returns>The hash code.</returns>
-        private static string GetHashCode(string text)
-        {
-            byte[] buffer = UTF8Encoding.Default.GetBytes(text);
-            SHA1CryptoServiceProvider cryptoTransformSHA1 = new SHA1CryptoServiceProvider();
-            
-            return BitConverter.ToString(cryptoTransformSHA1.ComputeHash(buffer));
-        }
-
-        /// <summary>
         ///     Parses a fragment.
         /// </summary>
         /// <param name="fragment">The fragment to parse.</param>
@@ -515,33 +544,33 @@ namespace Subspace.TextTemplating
             {
                 fragmentType = FragmentType.Markup;
             }
-            // Determine whether the script should automatically write the result to the output.
             else if (fragment.StartsWith(startMarker + Constants.ScriptAutoWriteMarker, StringComparison.Ordinal))
             {
+                // The script should automatically write the result to the output.
                 startMarker += Constants.ScriptAutoWriteMarker;
                 fragmentType = FragmentType.AutoWriteScript;
             }
-            // Determine whether the script is a function definition.
             else if (fragment.StartsWith(startMarker + Constants.ScriptClassBodyMarker, StringComparison.Ordinal))
             {
+                // The script is a function definition.
                 startMarker += Constants.ScriptClassBodyMarker;
                 fragmentType = FragmentType.ClassBody;
             }
-            // Determine whether the script is an include statement.
             else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.ScriptIncludeMarker, StringComparison.Ordinal))
             {
+                // The script is an include statement.
                 startMarker += Constants.DirectiveMarker + Constants.ScriptIncludeMarker;
                 fragmentType = FragmentType.Include;
             }
-            // Determine whether the script is a namespace import statement.
             else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.TemplateMarker, StringComparison.Ordinal))
             {
+                // The script is a namespace import statement.
                 startMarker += Constants.DirectiveMarker + Constants.TemplateMarker;
                 fragmentType = FragmentType.Template;
             }
-            // Determine whether the script is a namespace import statement.
             else if (fragment.StartsWith(startMarker + Constants.DirectiveMarker + Constants.NamespaceImportMarker, StringComparison.Ordinal))
             {
+                // The script is a namespace import statement.
                 startMarker += Constants.DirectiveMarker + Constants.NamespaceImportMarker;
                 fragmentType = FragmentType.NamespaceImport;
             }
@@ -604,7 +633,7 @@ namespace Subspace.TextTemplating
         /// <param name="fragment">The fragment.</param>
         private void ParseTemplateDirective(string fragment)
         {
-            string language = ExtractDirectiveAttribute(fragment, Constants.LanguageAttributeName) ?? "";
+            string language = ExtractDirectiveAttribute(fragment, Constants.LanguageAttributeName) ?? string.Empty;
 
             if (language.StartsWith(Constants.CSharpLanguageIdentifier, StringComparison.Ordinal))
             {
@@ -626,7 +655,7 @@ namespace Subspace.TextTemplating
             }
             else
             {
-                throw new InvalidOperationException(InternalExceptionStrings.InvalidOperationException_UnrecognizedLanguageIdentifier);
+                throw new InvalidOperationException(InvalidOperationException_UnrecognizedLanguageIdentifier);
             }
         }
 
@@ -707,23 +736,6 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Extracts the value of the specified attribute from the specified text.
-        /// </summary>
-        /// <param name="text">The text.</param>
-        /// <param name="attributeName">The name of the attribute.</param>
-        /// <returns>The extracted attribute value.</returns>
-        private static string ExtractDirectiveAttribute(string text, string attributeName)
-        {
-            Regex regex = new Regex(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    @"\b({0})\s*=\s*""(?<value>([^""])*)""",
-                    attributeName), RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
-
-            return regex.Match(text).Groups["value"].Value;
-        }
-
-        /// <summary>
         ///     Returns an array of required assembly reference names.
         /// </summary>
         /// <returns>An array of assembly reference names.</returns>
@@ -781,8 +793,8 @@ namespace Subspace.TextTemplating
                 compilerParameters.GenerateInMemory = true;
                 compilerParameters.ReferencedAssemblies.AddRange(GetAssemblyReferences());
                 compilerParameters.IncludeDebugInformation = DebugMode;
-                compilerParameters.WarningLevel = (DebugMode ? 3 : 1);
-                compilerParameters.CompilerOptions = (DebugMode ? "" : "/optimize");
+                compilerParameters.WarningLevel = DebugMode ? 3 : 1;
+                compilerParameters.CompilerOptions = DebugMode ? string.Empty : "/optimize";
 
                 return provider.CompileAssemblyFromSource(compilerParameters, script);
             }

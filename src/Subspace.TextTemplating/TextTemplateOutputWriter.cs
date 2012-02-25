@@ -1,18 +1,33 @@
-using System;
-using System.Globalization;
-using System.Text;
-using System.Xml;
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="TextTemplateOutputWriter.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating
 {
+    using System;
+    using System.Globalization;
+    using System.Text;
+
     /// <summary>
     ///     Provides means for outputing text from a text template file.
     /// </summary>
     public sealed class TextTemplateOutputWriter
     {
+        private const string InvalidOperationException_NotCapturing = "Not capturing.";
+
         private StringBuilder stringBuilder;
         private bool capturing;
         private int captureOffset;
+
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="TextTemplateOutputWriter"/> class.
+        /// </summary>
+        public TextTemplateOutputWriter()
+        {
+            stringBuilder = new StringBuilder();
+        }
 
         /// <summary>
         ///     Gets or sets a value indicating whether to trims all leading and trailing
@@ -122,14 +137,6 @@ namespace Subspace.TextTemplating
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="TextTemplateOutputWriter"/> class.
-        /// </summary>
-        public TextTemplateOutputWriter()
-        {
-            stringBuilder = new StringBuilder();
-        }
-
-        /// <summary>
         ///     Starts capturing the output text.
         /// </summary>
         internal void StartCapture()
@@ -147,7 +154,7 @@ namespace Subspace.TextTemplating
         {
             if (!capturing)
             {
-                throw new InvalidOperationException(InternalExceptionStrings.InvalidOperationException_NotCapturing);
+                throw new InvalidOperationException(InvalidOperationException_NotCapturing);
             }
 
             capturing = false;

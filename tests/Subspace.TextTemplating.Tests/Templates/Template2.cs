@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using Subspace.TextTemplating.Tests.TestObjects;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="Template2.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.Tests.Templates
 {
+    using Subspace.TextTemplating.Tests.TestObjects;
+
     public partial class Template2 : Template2Base
     {
         // This property is implemented only to allow the template to be transformed by the T4

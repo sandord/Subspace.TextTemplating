@@ -1,18 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-
-using NUnit.Framework;
-
-using Subspace.TextTemplating;
-
-using Subspace.TextTemplating.Tests.TestObjects;
-using Subspace.TextTemplating.Tests.Templates;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="TextTemplateTransformerTests.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.Tests
 {
+    using System;
+    
+    using NUnit.Framework;
+    
+    using Subspace.TextTemplating;
+    using Subspace.TextTemplating.Tests.Templates;
+    using Subspace.TextTemplating.Tests.TestObjects;
+
     [TestFixture]
     public class TextTemplateTransformerTests
     {

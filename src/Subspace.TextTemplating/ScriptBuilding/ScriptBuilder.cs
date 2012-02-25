@@ -1,12 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Globalization;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="ScriptBuilder.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.ScriptBuilding
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+
     /// <summary>
     ///     Provides means of building a script that is suitable for execution.
     /// </summary>
@@ -17,7 +22,23 @@ namespace Subspace.TextTemplating.ScriptBuilding
 
         private string namespaceName;
         private string className;
-        private IInnerScriptBuilder _innerScriptBuilder;
+        private IInnerScriptBuilder innerScriptBuilder;
+
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="ScriptBuilder"/> class.
+        /// </summary>
+        /// <param name="namespaceName">The namespace name.</param>
+        /// <param name="className">The class name.</param>
+        public ScriptBuilder(string namespaceName, string className)
+        {
+            this.namespaceName = namespaceName;
+            this.className = className;
+
+            Script = new StringBuilder();
+            ScriptNestingStack = new Stack<string>();
+            MainMethodName = Constants.MainMethodName;
+            NamespaceReferences = new List<NamespaceReference>();
+        }
 
         /// <summary>
         ///     Gets a value indicating whether this instance is empty.
@@ -37,12 +58,12 @@ namespace Subspace.TextTemplating.ScriptBuilding
         {
             get
             {
-                if (_innerScriptBuilder == null)
+                if (innerScriptBuilder == null)
                 {
-                    _innerScriptBuilder = ScriptBuilderFactory.Create(ScriptLanguage, namespaceName, className);
+                    innerScriptBuilder = ScriptBuilderFactory.Create(ScriptLanguage, namespaceName, className);
                 }
 
-                return _innerScriptBuilder;
+                return innerScriptBuilder;
             }
         }
 
@@ -56,7 +77,7 @@ namespace Subspace.TextTemplating.ScriptBuilding
         }
 
         /// <summary>
-        ///     Gets or sets value indicating whether to include source file references in the
+        ///     Gets or sets a value indicating whether to include source file references in the
         ///     generated code.
         /// </summary>
         public bool IncludeSourceFileReferences
@@ -98,22 +119,6 @@ namespace Subspace.TextTemplating.ScriptBuilding
         {
             get;
             private set;
-        }
-
-        /// <summary>
-        ///     Initializes a new instance of the <see cref="ScriptBuilder"/> class.
-        /// </summary>
-        /// <param name="namespaceName">The namespace name.</param>
-        /// <param name="className">The class name.</param>
-        public ScriptBuilder(string namespaceName, string className)
-        {
-            this.namespaceName = namespaceName;
-            this.className = className;
-
-            Script = new StringBuilder();
-            ScriptNestingStack = new Stack<string>();
-            MainMethodName = Constants.MainMethodName;
-            NamespaceReferences = new List<NamespaceReference>();
         }
 
         /// <summary>
@@ -359,7 +364,7 @@ namespace Subspace.TextTemplating.ScriptBuilding
         /// <returns><c>true</c>, if the path is local;<c>false</c>, otherwise.</returns>
         private bool GetIsLocalPath(string path)
         {
-            //TODO: implement
+            // TODO: implement
             return true;
         }
     }

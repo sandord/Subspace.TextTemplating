@@ -1,16 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright company="Subspace" file="CSharpScriptBuilder.cs">
+//   Copyright (c) Subspace. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Subspace.TextTemplating.ScriptBuilding
 {
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.Text;
+
     /// <summary>
     ///     Provides a means of building a C# script that is suitable for execution.
     /// </summary>
     internal sealed class CSharpScriptBuilder : ScriptBuilder
     {
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="CSharpScriptBuilder"/> class.
+        /// </summary>
+        /// <param name="namespaceName">The namespace name.</param>
+        /// <param name="className">The class name.</param>
+        internal CSharpScriptBuilder(string namespaceName, string className)
+            : base(namespaceName, className)
+        {
+        }
+
         /// <summary>
         ///     Gets the script language.
         /// </summary>
@@ -20,16 +34,6 @@ namespace Subspace.TextTemplating.ScriptBuilding
             {
                 return ScriptLanguage.CSharp;
             }
-        }
-
-        /// <summary>
-        ///     Initializes a new instance of the <see cref="CSharpScriptBuilder"/> class.
-        /// </summary>
-        /// <param name="namespaceName">The namespace name.</param>
-        /// <param name="className">The class name.</param>
-        internal CSharpScriptBuilder(string namespaceName, string className)
-            : base(namespaceName, className)
-        {
         }
 
         /// <summary>

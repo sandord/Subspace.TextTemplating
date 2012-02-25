@@ -9,10 +9,10 @@
 // ------------------------------------------------------------------------------
 namespace Subspace.TextTemplating.Tests.Templates
 {
-    using System;
-    
-    
-    #line 1 "C:\Users\Sandor\Documents\Visual Studio 2010\Projects\Subspace.TextTemplating\tests\Subspace.TextTemplating.Tests\Templates\Template1.tt"
+
+
+
+#line 1 "C:\Users\Sandor\Documents\Visual Studio 2010\Projects\Subspace.TextTemplating\tests\Subspace.TextTemplating.Tests\Templates\Template1.tt"
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "10.0.0.0")]
     public partial class Template1 : Template1Base
     {
