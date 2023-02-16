@@ -1,5 +1,7 @@
 Subspace.TextTemplating is a .NET text templating library.
 
+THIS REPOSITORY HAS BEEN ARCHIVED
+
 **Key features**
 
 * Allows for creating text based output dynamically by using templates with inline code;
